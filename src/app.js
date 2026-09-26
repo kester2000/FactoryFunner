@@ -1,12 +1,15 @@
 import {MACHINES,PIPES,COLORS,COLOR_NAMES} from './data.js';
 import {BOARDS,BOARD_ORDER,BOARD_SKINS,playableBoard,boardImage,boardDefinition} from './boards.js';
-import {newGame,clone,place,remove,rotate,settle,resetRound,validate,restore,machine,ports,pipeEdges,center,neighbor,label,placementError,mod,campaignResult,nextCampaignGame} from './engine.js';
+import {tracePipeStroke,planPipePath,layPipePath} from './routing.js';
+import {newGame,clone,place,remove,move,rotate,settle,resetRound,validate,restore,machine,ports,pipeEdges,center,neighbor,label,placementError,mod,campaignResult,nextCampaignGame} from './engine.js';
 const $=id=>document.getElementById(id),SAVE='factory-funner.save.v1',BEST='factory-funner.best.v1';
 let game,saveError=false,loaded=false;
 try{const raw=localStorage.getItem(SAVE);if(raw){game=restore(JSON.parse(raw));loaded=true;}}catch{saveError=true;}
 game ||=newGame('FIRST-SHIFT',true);
 let tool={kind:'machine'},rotation=0,flipped=false,selected=null,undo=[],redo=[],diagnose=false,result=validate(game),hover=null;
 let camera={x:-25,y:-20,w:1015,h:920},toastTimer,focusedCell=null;
+let pipeStroke=null,routeMode=false;
+let warehouseDrag=null,warehouseClickUntil=0;
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const tankImage=(kind,color)=>`assets/game/${kind==='supply'?`Toke_Factory_Funner_Reservoirs_Supply-${color==='pink'?'red':color}`:kind==='black'?'Toke_Factory_Funner_Reservoir_b':'Toke_Factory_Funner_Reservoirs'}_a0s0.png`;
 const current=()=>machine(game.deck[game.round-1]);
@@ -52,6 +55,18 @@ function drawBoard(){
   const selectedP=selectedPiece();
   let html=`<defs><clipPath id="hex-clip"><polygon points="${polygon()}"/></clipPath><clipPath id="tank-clip"><circle r="64"/></clipPath></defs><image href="${boardImage(game)}" width="${board.width}" height="${board.height}" class="board-art"/>`;
   html+=game.pieces.map(p=>pieceMarkup(p)).join('');
+  if(dragPreview){
+    const p=game.pieces.find(p=>p.id===dragPreview.id);
+    if(p){const [x,y]=center(dragPreview.q,dragPreview.r);html+=`<g transform="translate(${x} ${y})" pointer-events="none"><polygon points="${polygon()}" fill="${dragPreview.valid?'#73cba0':'#ef7765'}" opacity=".45" stroke="${dragPreview.valid?'#18664e':'#a32e24'}" stroke-width="4"/></g>`+pieceMarkup({...p,q:dragPreview.q,r:dragPreview.r},true);}
+  }
+  if(pipeStroke?.path.length){
+    const points=pipeStroke.path.map(p=>center(p.q,p.r).join(',')).join(' ');
+    html+=`<polyline points="${points}" fill="none" stroke="${pipeStroke.error?'#e66851':'#eeb95b'}" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" opacity=".8" pointer-events="none"/>`;
+  }
+  if(warehouseDrag?.moved&&warehouseDrag.proposal){
+    const p=warehouseDrag.proposal,[x,y]=center(p.q,p.r);
+    html+=`<g transform="translate(${x} ${y})" pointer-events="none"><polygon points="${polygon()}" fill="${warehouseDrag.error?'#ef7765':'#73cba0'}" opacity=".45"/></g>`+pieceMarkup(p,true);
+  }
   if(hover&&tool&&!game.over){const p={...tool,machineId:current().id,q:hover[0],r:hover[1],rot:rotation,flip:flipped,id:-1,round:game.round};if(!placementError(game,p))html+=pieceMarkup(p,true);}
   html+=BOARD.map(k=>{const [q,r]=k.split(',').map(Number),[x,y]=center(q,r),pieces=game.pieces.filter(p=>p.q===q&&p.r===r);return `<g transform="translate(${x} ${y})"><polygon points="${polygon()}" class="hex-hit ${selectedP?.q===q&&selectedP?.r===r?'selected':''} ${pieces.some(p=>ids.has(p.id))?'issue':''}" data-cell="${k}" role="button" tabindex="0" aria-label="格子 ${q+1},${r+1}${pieces.length?'，'+pieces.map(label).join('，'):'，空格'}"/><text class="cell-label" text-anchor="middle" y="59">${q+1}·${r+1}</text></g>`;}).join('');
   $('board').innerHTML=html;$('board').setAttribute('viewBox',`${camera.x} ${camera.y} ${camera.w} ${camera.h}`);
@@ -59,6 +74,8 @@ function drawBoard(){
 function render(){
   result=validate(game);const m=current(),p=selectedPiece();
   $('board-id').textContent=game.boardId||'A';
+  $('route-tool').setAttribute('aria-pressed',String(routeMode));
+  $('route-tool').disabled=game.over;
   $('machine-name').textContent=m.name;$('machine-id').textContent=`MACHINE ${String(m.id).padStart(2,'0')} / 48`;$('revenue').textContent=`$${m.revenue}`;$('machine-image').src=m.image;
   $('machine-state').textContent=game.over?'本局已完成':placed()?'已放置':'等待安装';
   $('pick-machine').classList.toggle('selected',tool?.kind==='machine');$('pick-machine').disabled=game.over;
@@ -76,7 +93,7 @@ function render(){
   $('settle').disabled=!game.over&&(!placed()||!result.valid);$('settle').innerHTML=game.over?'查看本局成绩 <span>↗</span>':`完成安装 <span>→</span>`;$('skip').disabled=game.over;
   const active=game.over?'本局已完成':p?label(p):tool?.kind==='machine'?'安装机器':tool?.kind==='pipe'?PIPES.find(x=>x.id===tool.shape).name:tool?label(tool):'选择 / 平移';
   $('active-tool').textContent=active;$('orientation').textContent=`${(p?.rot??rotation)*60}°`;
-  $('selection-info').innerHTML=`${escape(active)}<small>${p?p.kind==='machine'&&p.round<game.round?'机器已固定 · 多色端口自动匹配':'点击旋转或拆除；同格交叉管道可再次点击切换':tool?'点击棋盘空格放置；旋转调整接口朝向':'点击组件查看；拖动棋盘平移'}</small>`;
+  $('selection-info').innerHTML=`${escape(active)}<small>${p?p.kind==='machine'&&p.round<game.round?'机器已固定 · 多色端口自动匹配':'直接拖动可移动；同格管道先选中要移动的那一条':tool?'点击棋盘空格放置；旋转调整接口朝向':'拖动组件移动；拖动空白处平移'}</small>`;
   $('remove').disabled=!p||game.over||(p.kind==='machine'&&p.round<game.round);
   $('rotate').disabled=game.over||(!tool&&!p)||(p?.kind==='machine'&&p.round<game.round);
   $('flip').disabled=game.over||(p?.kind??tool?.kind)!=='pipe';
@@ -108,7 +125,7 @@ function renderPalette(){
     $('pipe-palette').querySelectorAll('[data-pipe]').forEach(b=>b.onclick=()=>choose({kind:'pipe',shape:b.dataset.pipe}));
     $('warehouse-hint').textContent='供应罐每色 1 个，白罐共 3 个。选管件再点已有管道格可独立叠放，自动避开占用接口。';
 }
-function choose(spec){tool=spec;selected=null;rotation=0;flipped=false;hover=null;render();}
+function choose(spec){tool=spec;routeMode=false;selected=null;rotation=0;flipped=false;hover=null;render();}
 function cellClick(q,r){
   focusedCell=[q,r];
   if(game.over){const ps=game.pieces.filter(p=>p.q===q&&p.r===r);selected=ps[0]?.id;tool=null;render();return;}
@@ -136,7 +153,8 @@ $('pick-machine').onclick=()=>{if(placed()){selected=game.pieces.find(p=>p.kind=
 $('rotate').onclick=()=>{if(selected)change(()=>rotate(game,selected));else{rotation=mod(rotation+1);render();}};
 $('flip').onclick=()=>{if(selected)change(()=>rotate(game,selected,0,true));else{flipped=!flipped;render();}};
 $('remove').onclick=()=>{if(selected)change(()=>{remove(game,selected);selected=null;});};
-$('select-tool').onclick=()=>{tool=null;hover=null;selected=null;render();};
+$('select-tool').onclick=()=>{tool=null;routeMode=false;hover=null;selected=null;render();};
+$('route-tool').onclick=()=>{routeMode=!routeMode;tool=null;hover=null;selected=null;render();toast(routeMode?'划线铺管：拖过需要连接的格子，松开铺设；Esc 取消':'已退出划线铺管');};
 $('undo').onclick=()=>{if(!undo.length||game.over)return;redo.push(clone(game));game=undo.pop();selected=null;hover=null;save();render();};
 $('redo').onclick=()=>{if(!redo.length||game.over)return;undo.push(clone(game));game=redo.pop();selected=null;hover=null;save();render();};
 $('reset-round').onclick=()=>{
@@ -148,34 +166,159 @@ $('show-ports').onchange=drawBoard;
 function resetCamera(){camera={x:-25,y:-20,w:1015,h:920};drawBoard();}
 function zoom(factor){const width=Math.min(1522,Math.max(350,camera.w*factor)),ratio=width/camera.w;camera={x:camera.x+(camera.w-width)/2,y:camera.y+(camera.h-camera.h*ratio)/2,w:width,h:camera.h*ratio};drawBoard();}
 $('zoom-in').onclick=()=>zoom(.8);$('zoom-out').onclick=()=>zoom(1.25);$('zoom-fit').onclick=resetCamera;
-let pointers=new Map(),gesture=null,suppressClick=false;
+let pointers=new Map(),gesture=null,suppressClick=false,dragPreview=null;
 const board=$('board');
+function boardPoint(e){const matrix=board.getScreenCTM();return matrix?new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse()):null;}
+function updatePipeStroke(e){
+  const point=boardPoint(e);if(!point)return;
+  const previous=pipeStroke.points.at(-1);
+  if(previous&&Math.hypot(previous.x-point.x,previous.y-point.y)<2)return;
+  pipeStroke.points.push({x:point.x,y:point.y});
+  try{
+    pipeStroke.path=tracePipeStroke(game,pipeStroke.points);
+    if(pipeStroke.path.length>=2)planPipePath(game,pipeStroke.path);
+    pipeStroke.error=null;
+  }catch(error){pipeStroke.error=error.message;}
+  drawBoard();
+}
+board.addEventListener('contextmenu',e=>e.preventDefault());
+function dragCell(e){
+  const matrix=board.getScreenCTM();if(!matrix)return null;
+  const point=new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse());
+  let closest=null,distance=Infinity;
+  for(const cell of playableBoard(game.boardId).cells){const [q,r]=cell.split(',').map(Number),[x,y]=center(q,r),d=Math.hypot(point.x-x,point.y-y);if(d<distance){distance=d;closest={q,r};}}
+  return distance<=77?closest:null;
+}
+function warehouseSource(target){return target.closest?.('#pick-machine, [data-tank], [data-pipe]');}
+function warehouseDrop(e){
+  const d=warehouseDrag,hit=document.elementFromPoint(e.clientX,e.clientY);
+  const cell=hit&&board.contains(hit)?dragCell(e):null;
+  d.proposal=null;d.error='请拖到棋盘可用格';
+  if(!cell)return;
+  const p={...d.spec,...cell,rot:d.rot,flip:d.flip,id:d.existingId||-1,round:game.round};
+  d.error=placementError(game,p,d.existingId);
+  if(d.error&&p.kind==='pipe')for(let offset=1;offset<6;offset++){
+    const candidate={...p,rot:mod(d.rot+offset)};
+    if(!placementError(game,candidate)){Object.assign(p,candidate);d.error=null;break;}
+  }
+  d.proposal=p;
+}
+function endWarehouseDrag(){
+  const d=warehouseDrag;if(!d)return;
+  warehouseDrag=null;d.ghost?.remove();document.body.classList.remove('warehouse-dragging');
+  if(d.source.hasPointerCapture(d.pointerId))d.source.releasePointerCapture(d.pointerId);
+  if(d.moved)warehouseClickUntil=performance.now()+300;
+  return d;
+}
+document.addEventListener('dragstart',e=>{if(warehouseSource(e.target))e.preventDefault();});
+document.addEventListener('click',e=>{
+  if(performance.now()<warehouseClickUntil){e.preventDefault();e.stopImmediatePropagation();warehouseClickUntil=0;}
+},true);
+document.addEventListener('pointerdown',e=>{
+  if(warehouseDrag){endWarehouseDrag();drawBoard();return;}
+  const source=warehouseSource(e.target);if(!source||source.disabled||e.button!==0||game.over)return;
+  let spec,existing=null;
+  if(source.id==='pick-machine'){
+    spec={kind:'machine',machineId:current().id};
+    existing=game.pieces.find(p=>p.kind==='machine'&&p.round===game.round);
+  }else if(source.dataset.pipe)spec={kind:'pipe',shape:source.dataset.pipe};
+  else{
+    const index=Number(source.dataset.tank);
+    spec=index<4?{kind:'supply',color:['green','blue','pink','yellow'][index]}:{kind:index===4?'collector':'black'};
+  }
+  const same=tool?.kind===spec.kind&&tool?.color===spec.color&&tool?.shape===spec.shape;
+  warehouseDrag={source,spec,pointerId:e.pointerId,start:{x:e.clientX,y:e.clientY},moved:false,rot:existing?.rot??(same?rotation:0),flip:existing?.flip??(same?flipped:false),existingId:existing?.id||null};
+  source.setPointerCapture(e.pointerId);
+},true);
+document.addEventListener('pointermove',e=>{
+  const d=warehouseDrag;if(!d||d.pointerId!==e.pointerId)return;
+  if(!d.moved&&Math.hypot(e.clientX-d.start.x,e.clientY-d.start.y)<7)return;
+  e.preventDefault();d.moved=true;
+  if(!d.ghost){
+    d.ghost=document.createElement('div');d.ghost.className='warehouse-drag-ghost';
+    const art=d.source.querySelector('img,svg');if(art)d.ghost.append(art.cloneNode(true));
+    document.body.append(d.ghost);document.body.classList.add('warehouse-dragging');
+  }
+  d.ghost.style.left=`${e.clientX+14}px`;d.ghost.style.top=`${e.clientY+14}px`;
+  warehouseDrop(e);d.ghost.classList.toggle('invalid',Boolean(d.error));drawBoard();
+},{capture:true,passive:false});
+document.addEventListener('pointerup',e=>{
+  const d=warehouseDrag;if(!d||d.pointerId!==e.pointerId)return;
+  if(d.moved)warehouseDrop(e);
+  endWarehouseDrag();if(!d.moved)return;
+  e.preventDefault();e.stopPropagation();
+  if(d.error||!d.proposal){toast(d.error||'未放入棋盘');drawBoard();return;}
+  const p=d.proposal;
+  change(()=>{
+    const added=d.existingId?move(game,d.existingId,p.q,p.r):place(game,d.spec,p.q,p.r,p.rot,p.flip);
+    selected=added.id;tool=null;routeMode=false;hover=null;rotation=added.rot;flipped=added.flip;focusedCell=[p.q,p.r];
+  });
+},true);
+document.addEventListener('pointercancel',e=>{if(warehouseDrag?.pointerId===e.pointerId){endWarehouseDrag();drawBoard();}},true);
+window.addEventListener('blur',()=>{if(warehouseDrag){endWarehouseDrag();drawBoard();}});
 board.addEventListener('pointerdown',e=>{
+  if(pipeStroke){pipeStroke=null;drawBoard();return;}
+  if(e.button===2||(routeMode&&e.button===0)){
+    e.preventDefault();if(game.over)return;
+    const point=boardPoint(e);if(!point)return;
+    pipeStroke={pointerId:e.pointerId,points:[{x:point.x,y:point.y}],path:[],error:null};hover=null;
+    board.setPointerCapture(e.pointerId);return;
+  }
   if(e.button!==0)return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   gesture={start:{x:e.clientX,y:e.clientY},camera:{...camera},moved:false,cell:e.target.closest('[data-cell]')?.dataset.cell};
-  if(pointers.size===2){const [a,b]=[...pointers.values()];gesture.distance=Math.hypot(a.x-b.x,a.y-b.y);gesture.moved=true;}
+  if(gesture.cell&&!game.over){
+    const pieces=game.pieces.filter(p=>`${p.q},${p.r}`===gesture.cell);
+    const p=pieces.find(p=>p.id===selected)||pieces.at(-1);
+    if(p)gesture.pieceId=p.id;
+  }
+  if(pointers.size===2){const [a,b]=[...pointers.values()];gesture.distance=Math.hypot(a.x-b.x,a.y-b.y);gesture.moved=true;gesture.pieceId=null;gesture.pinching=true;dragPreview=null;drawBoard();}
   board.setPointerCapture(e.pointerId);
 });
 board.addEventListener('pointermove',e=>{
+  if(pipeStroke?.pointerId===e.pointerId){e.preventDefault();updatePipeStroke(e);return;}
   if(!pointers.has(e.pointerId))return;
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(!gesture)return;
   if(pointers.size===2){const [a,b]=[...pointers.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(gesture.distance){const w=Math.max(350,Math.min(1522,gesture.camera.w*gesture.distance/d));const ratio=w/gesture.camera.w;camera={x:gesture.camera.x+(gesture.camera.w-w)/2,y:gesture.camera.y+(gesture.camera.h-gesture.camera.h*ratio)/2,w,h:gesture.camera.h*ratio};drawBoard();}return;}
   const dx=e.clientX-gesture.start.x,dy=e.clientY-gesture.start.y;if(Math.hypot(dx,dy)<7&&!gesture.moved)return;
+  if(gesture.pinching)return;
+  if(gesture.pieceId){
+    gesture.moved=true;const p=game.pieces.find(p=>p.id===gesture.pieceId);
+    if(p.kind==='machine'&&p.round!==game.round){gesture.locked=true;return;}
+    const cell=dragCell(e);selected=p.id;tool=null;hover=null;
+    dragPreview=cell?{...cell,id:p.id,valid:!placementError(game,{...p,...cell},p.id)}:null;
+    board.classList.add('dragging-piece');drawBoard();return;
+  }
   gesture.moved=true;const rect=board.getBoundingClientRect();const scale=Math.max(gesture.camera.w/rect.width,gesture.camera.h/rect.height);
   camera.x=gesture.camera.x-dx*scale;camera.y=gesture.camera.y-dy*scale;drawBoard();
 });
 board.addEventListener('pointerup',e=>{
+  if(pipeStroke?.pointerId===e.pointerId){
+    updatePipeStroke(e);const stroke=pipeStroke;pipeStroke=null;suppressClick=e.button===0;
+    if(stroke.error)toast(stroke.error+'；本次未铺设');
+    else if(stroke.path.length>=2)change(()=>{const ids=layPipePath(game,stroke.path);selected=ids.at(-1)||null;tool=null;const last=stroke.path.at(-1);focusedCell=[last.q,last.r];});
+    drawBoard();return;
+  }
   pointers.delete(e.pointerId);if(!gesture)return;
   if(pointers.size){gesture.moved=true;return;}
   const g=gesture;gesture=null;suppressClick=true;
+  dragPreview=null;board.classList.remove('dragging-piece');
+  if(g.moved&&g.pieceId){
+    const cell=dragCell(e),p=game.pieces.find(p=>p.id===g.pieceId);
+    if(g.locked)toast('已结算的机器不能移动');
+    else if(!cell)toast('请拖到棋盘可用格，组件已保持原位');
+    else if(p.q!==cell.q||p.r!==cell.r)change(()=>{move(game,p.id,cell.q,cell.r);focusedCell=[cell.q,cell.r];});
+    render();return;
+  }
   if(!g.moved&&g.cell){const [q,r]=g.cell.split(',').map(Number);cellClick(q,r);}
 });
-board.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);gesture=null;});
+board.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);gesture=null;pipeStroke=null;dragPreview=null;board.classList.remove('dragging-piece');drawBoard();});
 board.addEventListener('click',e=>{if(suppressClick){suppressClick=false;return;}const cell=e.target.closest('[data-cell]');if(cell){const [q,r]=cell.dataset.cell.split(',').map(Number);cellClick(q,r);}});
 board.addEventListener('keydown',e=>{if(['Enter',' '].includes(e.key)&&e.target.dataset.cell){e.preventDefault();const [q,r]=e.target.dataset.cell.split(',').map(Number);cellClick(q,r);}});
 board.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY>0?1.1:.9);},{passive:false});
 document.addEventListener('keydown',e=>{
   if($('modal').open||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;
+  if(warehouseDrag){if(e.key==='Escape'){endWarehouseDrag();drawBoard();}return;}
+  if(e.key==='Escape'&&pipeStroke){pipeStroke=null;drawBoard();return;}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();$(e.shiftKey?'redo':'undo').click();}
   else if(e.key.toLowerCase()==='r')$('rotate').click();else if(e.key.toLowerCase()==='f')$('flip').click();
   else if(['Delete','Backspace'].includes(e.key)){e.preventDefault();$('remove').click();}else if(e.key==='Escape')$('select-tool').click();
@@ -185,10 +328,23 @@ function modal(title,subtitle,body){
   $('modal-content').querySelector('.close-modal').onclick=()=>$('modal').close();if(!$('modal').open)$('modal').showModal();
 }
 $('modal').addEventListener('click',e=>{if(e.target===$('modal')){const r=$('modal').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('modal').close();}});
-function start(seed,tutorial=false){game=newGame(seed||Math.random().toString(36).slice(2,9).toUpperCase(),tutorial);tool={kind:'machine'};selected=null;rotation=0;flipped=false;undo=[];redo=[];diagnose=false;hover=null;save();resetCamera();render();$('modal').close();toast(tutorial?'第一班开工！跟随棋盘提示完成安装。':'新工厂已就绪，开始规划吧。');}
+function start(seed,tutorial=false,options={}){game=options.next||newGame(seed||Math.random().toString(36).slice(2,9).toUpperCase(),tutorial,{boardSkin:game.boardSkin,...options});tool={kind:'machine'};selected=null;rotation=0;flipped=false;undo=[];redo=[];diagnose=false;hover=null;focusedCell=null;save();resetCamera();render();$('modal').close();toast(tutorial?'第一班开工！跟随棋盘提示完成安装。':`工厂 ${game.boardId} 已就绪，开始规划吧。`);}
+const progressionText=p=>p.completed?'B6 挑战达标，已到达最高难度！':p.action==='promote'?`达到 $50，下一局升至 ${p.nextBoardId}`:p.action==='demote'?`不高于 $45，下一局降至 ${p.nextBoardId}`:`下一局继续 ${p.nextBoardId}${p.total<=45?'（最低难度）':'（$46–49 留级）'}`;
+function campaignPanel(){
+  let outcome=null,error='';
+  if(game.over)try{outcome=campaignResult(game);}catch(e){error=e.message;}
+  return `<section class="campaign-panel"><h3>单人进阶</h3><p>总分 = 资金 + 连锁奖励。达到 $50 升一级；$45 及以下降一级；$46–49 留级。</p><div class="level-track">${BOARD_ORDER.map(id=>`<span class="${id===(game.boardId||'A')?'active':''}">${id}</span>`).join('<i>→</i>')}</div>${outcome?`<p><strong>${progressionText(outcome)}</strong></p>${!boardDefinition(outcome.nextBoardId).available?`<p>已保留 ${outcome.nextBoardId} 的进阶结果，待接入原版棋盘后继续。</p>`:''}<button id="continue-campaign" class="primary" ${boardDefinition(outcome.nextBoardId).available?'':'disabled'}>继续进阶 · ${outcome.nextBoardId} →</button>`:`<p>${error||'完成本局八回合后，根据总分决定下一局棋盘。'}</p>`}<p class="muted">已完成的进阶对局：${(game.campaign||[]).length}</p>${game.campaign?.length?`<div class="campaign-history">${game.campaign.slice(-10).map(run=>`<p>${escape(run.boardId)} · $${run.total} → ${escape(run.nextBoardId)}</p>`).join('')}</div>`:''}</section>`;
+}
+function bindCampaign(){const button=$('continue-campaign');if(button)button.onclick=()=>{try{start(null,false,{next:nextCampaignGame(game,Math.random().toString(36).slice(2,9).toUpperCase())});}catch(e){toast(e.message);}};}
+function showBoards(){
+  modal('棋盘与单人进阶','不同 A 面配色布局相同；B1–B6 为递增难度。',`<div class="board-options">${BOARDS.map(b=>`<div class="board-option ${b.id===(game.boardId||'A')?'active':''}"><strong>${b.id}</strong><small>${b.available?`${b.cells.length} 个可用格`:'待接入原版布局'}</small></div>`).join('')}</div><h3>A 面配色</h3><div class="skin-options">${BOARD_SKINS.map(s=>`<button data-skin="${s.id}" aria-pressed="${s.id===game.boardSkin}"><img src="${s.image}" alt="${s.name}工厂 A">${s.name}</button>`).join('')}</div><p class="muted">更换配色不影响当前布局、回合与费用。</p>${campaignPanel()}`);
+  document.querySelectorAll('[data-skin]').forEach(b=>b.onclick=()=>{game.boardSkin=b.dataset.skin;save();render();showBoards();});
+  bindCampaign();
+}
+$('boards').onclick=showBoards;
 function confirmNew(tutorial=false){modal('开始新工厂','当前存档将被新对局替换。可以先从工厂菜单导出存档。',`<p>${tutorial?'引导局从简单的 Time Machine 开始，第一回合提供放置提示。':'从 48 台机器中随机抽取 8 台。输入相同种子可重玩同一牌组。'}</p><input class="seed-field" id="seed" maxlength="50" placeholder="对局种子（留空则随机）" value="${tutorial?'FIRST-SHIFT':''}"><div class="modal-actions"><button id="cancel-new">保留当前对局</button><button class="primary" id="confirm-new">开始${tutorial?'引导局':'新对局'} →</button></div>`);$('cancel-new').onclick=()=>$('modal').close();$('confirm-new').onclick=()=>start($('seed').value.trim(),tutorial);}
-$('menu').onclick=()=>{modal('工厂菜单','你的进度自动保存在当前浏览器。',`<div class="menu-grid"><button id="new-game" class="primary">新工厂 <small>随机 8 台机器，全新规划</small></button><button id="tutorial-game">引导对局 <small>从第一台机器开始学习</small></button><button id="export">导出存档 <small>保存文件，跨设备继续</small></button><button id="import">导入存档 <small>读取之前导出的 JSON</small></button><button id="ledger">本局账本 <small>查看每轮收入和支出</small></button><button id="catalog">机器图鉴 <small>查看完整 48 张机器</small></button></div><p class="muted">对局种子：<b>${escape(game.seed)}</b><br>规则：单人模式 · 工厂 A · 无时间限制</p>`);
-  $('new-game').onclick=()=>confirmNew();$('tutorial-game').onclick=()=>confirmNew(true);$('export').onclick=exportSave;$('import').onclick=()=>$('import-file').click();$('ledger').onclick=showLedger;$('catalog').onclick=showCatalog;
+$('menu').onclick=()=>{modal('工厂菜单','你的进度自动保存在当前浏览器。',`<div class="menu-grid"><button id="board-menu">棋盘与进阶 <small>查看难度、成绩与棋盘配色</small></button><button id="new-game" class="primary">新工厂 <small>随机 8 台机器，全新规划</small></button><button id="tutorial-game">引导对局 <small>从第一台机器开始学习</small></button><button id="export">导出存档 <small>保存文件，跨设备继续</small></button><button id="import">导入存档 <small>读取之前导出的 JSON</small></button><button id="ledger">本局账本 <small>查看每轮收入和支出</small></button><button id="catalog">机器图鉴 <small>查看完整 48 张机器</small></button></div><p class="muted">对局种子：<b>${escape(game.seed)}</b><br>规则：单人模式 · 工厂 ${game.boardId||'A'} · 无时间限制</p>`);
+  $('board-menu').onclick=showBoards;$('new-game').onclick=()=>confirmNew();$('tutorial-game').onclick=()=>confirmNew(true);$('export').onclick=exportSave;$('import').onclick=()=>$('import-file').click();$('ledger').onclick=showLedger;$('catalog').onclick=showCatalog;
 };
 function exportSave(){const blob=new Blob([JSON.stringify(game,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`factory-funner-round-${game.round}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('存档已导出');}
 $('import-file').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>500000)throw Error('存档文件过大');const imported=restore(JSON.parse(await file.text()));modal('导入这份存档？',`第 ${imported.round} 回合 · 资金 $${imported.money}`,`<p>导入会替换当前浏览器中的对局。</p><div class="modal-actions"><button id="import-cancel">取消</button><button id="import-confirm" class="primary">导入并继续 →</button></div>`);$('import-cancel').onclick=()=>$('modal').close();$('import-confirm').onclick=()=>{game=imported;undo=[];redo=[];selected=null;tool=null;save();render();resetCamera();$('modal').close();toast('存档已恢复');};}catch(error){toast('无法导入：'+error.message);}};
@@ -199,8 +355,8 @@ $('diagnostics').onclick=()=>{diagnose=true;drawBoard();modal('连接诊断',res
 function finishRound(skip=false){try{settle(game,skip);undo=[];redo=[];selected=null;tool=game.over?null:{kind:'machine'};rotation=0;flipped=false;diagnose=false;save();render();if(game.over)showResults();else toast(skip?'已跳过本轮，棋盘恢复到上轮结算状态。':`安装完成，进入第 ${game.round} 回合。`);}catch(error){toast(error.message);}}
 $('settle').onclick=()=>game.over?showResults():finishRound();
 $('skip').onclick=()=>{modal('跳过本回合？','单人模式跳过机器没有罚款。','<p>本回合的所有改动将撤销，工厂恢复至上回合结算后的布局，然后翻开下一台机器。</p><div class="modal-actions"><button id="cancel-skip">继续规划</button><button id="confirm-skip" class="primary">跳过本轮 →</button></div>');$('cancel-skip').onclick=()=>$('modal').close();$('confirm-skip').onclick=()=>{$('modal').close();finishRound(true);};};
-function showResults(){const bonus=validate(game).bonus,total=game.money+bonus;let best=total;try{best=Math.max(total,Number(localStorage.getItem(BEST))||0);localStorage.setItem(BEST,String(best));}catch{}modal('这一班，干得漂亮。',total>=50?'高效运转的工厂，来自精心安排的每一条管道。':'你的第一条生产线，已经有了自己的模样。',`<div class="result-score">$${total}</div><div class="result-caption">工厂最终收益 · 本机最高 $${best}</div><div class="score-breakdown"><span>资金 $${game.money}</span><span>连锁奖励 +$${bonus}</span></div>${ledgerHTML()}<div class="modal-actions"><button id="review">看看我的工厂</button><button id="again" class="primary">再建一座工厂 →</button></div>`);$('review').onclick=()=>$('modal').close();$('again').onclick=()=>confirmNew();}
-$('help').onclick=()=>modal('欢迎来到你的工厂','把每一台奇妙机器，接进井然有序的生产线。',`<div class="rule-step"><b>01</b><div><strong>选机器，找个好位置</strong><br>每轮只有一台机器，点击选中后放到空格。旋转让端口面向更合适的方向。</div></div><div class="rule-step"><b>02</b><div><strong>把每个接口连起来</strong><br>彩色罐提供无限原料；白罐回收一种彩色产物，黑罐回收成品。机器也能直接相邻连接。管道交叉不相通，三通和多通才会汇流。</div></div><div class="rule-step"><b>03</b><div><strong>检查，再完成安装</strong><br>颜色要相同，机器供给量必须覆盖需求；不能把供应罐和机器输出合流。机器不能接回自身输入。</div></div><div class="rule-step"><b>04</b><div><strong>八轮之后，看看收益</strong><br>初始 $10；安装机器获得收入，点击完成安装时，最终新增或调整的组件每件花 $1。机器供给的每个输入点在终局奖励 $3。</div></div><p class="muted">R 旋转 · F 镜像管道 · Delete 拆除 · Ctrl+Z 撤销<br>拖动平移 · 滚轮 / 双指缩放 · 手机可使用旋转和缩放按钮<br>已结算的机器不能移动；试放、拆除和反复旋转不累加费用；恢复到上轮布局不收费。</p><p><a href="https://c.tabletopia.com/games/factory-funner/rules/factory-funner-rulebook/en" target="_blank" rel="noreferrer">查看原版规则 ↗</a></p><p class="muted">本版使用提供的 Tabletopia 原版素材，支持单人工厂 A。管道使用清晰的矢量图显示连接关系。B 面难度进阶尚未实现。</p>`);
+function showResults(){const bonus=validate(game).bonus,total=game.money+bonus;let best=total;try{best=Math.max(total,Number(localStorage.getItem(BEST))||0);localStorage.setItem(BEST,String(best));}catch{}modal('这一班，干得漂亮。',total>=50?'高效运转的工厂，来自精心安排的每一条管道。':'你的第一条生产线，已经有了自己的模样。',`<div class="result-score">$${total}</div><div class="result-caption">工厂最终收益 · 本机最高 $${best}</div><div class="score-breakdown"><span>资金 $${game.money}</span><span>连锁奖励 +$${bonus}</span></div>${campaignPanel()}${ledgerHTML()}<div class="modal-actions"><button id="review">看看我的工厂</button><button id="again" class="primary">再建一座工厂 →</button></div>`);bindCampaign();$('review').onclick=()=>$('modal').close();$('again').onclick=()=>confirmNew();}
+$('help').onclick=()=>modal('欢迎来到你的工厂','把每一台奇妙机器，接进井然有序的生产线。',`<div class="rule-step"><b>01</b><div><strong>选机器，找个好位置</strong><br>每轮只有一台机器，点击选中后放到空格。旋转让端口面向更合适的方向。</div></div><div class="rule-step"><b>02</b><div><strong>把每个接口连起来</strong><br>彩色罐提供无限原料；白罐回收一种彩色产物，黑罐回收成品。机器也能直接相邻连接。管道交叉不相通，三通和多通才会汇流。</div></div><div class="rule-step"><b>03</b><div><strong>检查，再完成安装</strong><br>颜色要相同，机器供给量必须覆盖需求；不能把供应罐和机器输出合流。机器不能接回自身输入。</div></div><div class="rule-step"><b>04</b><div><strong>八轮之后，看看收益</strong><br>初始 $10；安装机器获得收入，点击完成安装时，最终新增或调整的组件每件花 $1。机器供给的每个输入点在终局奖励 $3。</div></div><p class="muted">R 旋转 · F 镜像管道 · Delete 拆除 · Ctrl+Z 撤销<br>拖动组件移动 · 拖动空白处平移 · 滚轮 / 双指缩放 · 手机可使用旋转和缩放按钮<br>已结算的机器不能移动；试放、拆除和反复旋转不累加费用；恢复到上轮布局不收费。</p><p><a href="https://c.tabletopia.com/games/factory-funner/rules/factory-funner-rulebook/en" target="_blank" rel="noreferrer">查看原版规则 ↗</a></p><p class="muted">本版使用提供的 Tabletopia 原版素材，支持单人工厂 A。管道使用清晰的矢量图显示连接关系。单人进阶：总分达到 $50 升一级，$45 及以下降一级，$46–49 留级。B1–B6 的原版布局尚待接入；进阶结果会保留。</p>`);
 render();save();
 if(!loaded){modal('你的工厂，今天开张。','FACTORY FUNNER · 单人模式',`<img src="assets/cover.png" class="welcome-art" alt="Factory Funner 桌游封面"><p>八台机器，一座工厂。把储罐与管道巧妙连接，让每一次安装都创造新的收益。</p><p class="muted">没有计时器，没有抢夺。专注享受规划的乐趣，进度会自动保存在这里。</p><div class="modal-actions"><button id="welcome-random">直接开始随机局</button><button id="welcome-tutorial" class="primary">跟随引导开工 →</button></div>`);$('welcome-tutorial').onclick=()=>$('modal').close();$('welcome-random').onclick=()=>start();}
 if(saveError)toast('浏览器存档不可用或原存档损坏，请使用菜单导出保存。');

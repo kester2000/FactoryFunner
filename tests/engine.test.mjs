@@ -4,6 +4,24 @@ import {newGame,place,settle,resetRound,validate,neighbor,rotate,remove,restore,
 import {MACHINES,BOARD,PIPES} from '../src/data.js';
 function setup(){const s=newGame('test',true);place(s,{kind:'machine'},2,3);place(s,{kind:'supply',color:'green'},1,2,1);place(s,{kind:'black'},2,4,4);return s;}
 
+test('Maxi Mixer requires two pink units and two green units',()=>{
+ const m=machine(20);
+ assert.deepEqual(m.ports.filter(p=>p.kind==='in').map(p=>[p.colors[0],p.amount]),[['green',2],['pink',2]]);
+ assert.equal(m.ports.find(p=>p.kind==='out').amount,3);
+});
+
+test('Moisture-stir requires two green units and three blue units',()=>{
+ const m=machine(25);
+ assert.deepEqual(m.ports.filter(p=>p.kind==='in').map(p=>[p.colors[0],p.amount]),[['blue',3],['green',2]]);
+ assert.equal(m.ports.find(p=>p.kind==='out').amount,2);
+});
+
+test('Spectrumizer printed yellow and green demands are both two',()=>{
+ const m=machine(39);
+ assert.equal(m.name,'Spectrumizer');
+ assert.deepEqual(m.ports.filter(p=>p.kind==='in').map(p=>[p.colors[0],p.amount]),[['yellow',2],['green',2]]);
+});
+
 test('four-machine cycle from the played board is rejected and cannot settle',()=>{
  const s=newGame('cycle-regression');s.deck=[32,3,31,23,9,1,2,4];
  const addMachine=(name,q,r,rot)=>{
@@ -176,7 +194,7 @@ test('Rebuilder requires two units of either pink or yellow, never a mixture',()
  // Replacing the infinite reservoir with Judger's yellow output (1) is insufficient.
  const yellow=s.pieces.find(p=>p.kind==='supply'&&p.color==='yellow');remove(s,yellow.id);
  s.round=2;s.deck[1]=40;place(s,{kind:'machine'},2,2);place(s,{kind:'pipe',shape:'elbow'},3,1,2);
- assert(validate(s).issues.some(i=>i.message==='流量不足：产出 1，需求 2'));
+ assert(validate(s).issues.some(i=>i.message.startsWith('流量不足：产出 1，需求 2')));
 });
 test('Rainbowrisor chooses one output color for the whole network, not all colors simultaneously',()=>{
  const s=newGame('rainbow');s.deck[0]=32;s.deck[1]=3;
@@ -205,7 +223,7 @@ test('insufficient machine output rejects a connected but under-supplied network
  const s=newGame('capacity');s.deck[0]=40;s.deck[1]=34;
  place(s,{kind:'machine'},2,3);place(s,{kind:'supply',color:'blue'},2,2);
  s.round=2;place(s,{kind:'machine'},1,3,3);place(s,{kind:'collector'},0,2,1);
- const v=validate(s);assert(v.issues.some(i=>i.message==='流量不足：产出 1，需求 3'));
+ const v=validate(s);assert(v.issues.some(i=>i.message.startsWith('流量不足：产出 1，需求 3')));
  assert.equal(v.bonus,0);
 });
 test('crossing pipes keep colors and networks independent',()=>{

@@ -1,4 +1,4 @@
-import {MACHINES,PIPES,BOARD,COLOR_NAMES} from './data.js';
+import {MACHINES,PIPES,COLOR_NAMES} from './data.js';
 import {BOARD_ORDER,BOARD_SKINS,playableBoard,progressionForScore} from './boards.js';
 export const clone = value=>structuredClone(value);
 export const key = (q,r)=>`${q},${r}`;
@@ -106,6 +106,14 @@ export function rotate(state,id,step=1,flip=false) {
   const error=placementError(state,changed,id);if(error)throw Error(error);
   Object.assign(p,changed);state.cost=installationCost(state);
 }
+export function move(state,id,q,r){
+  const p=state.pieces.find(x=>x.id===id);if(!p)throw Error('请选择组件');
+  if(p.kind==='machine'&&p.round!==state.round)throw Error('之前回合安装的机器不能移动');
+  const moved={...p,q,r};
+  const error=placementError(state,moved,id);if(error)throw Error(error);
+  Object.assign(p,moved);state.cost=installationCost(state);
+  return p;
+}
 export function setChoice(state,id,index,color) {
   if(state.over)throw Error('本局已结束');
   const p=state.pieces.find(p=>p.id===id);const port=p&&machine(p.machineId).ports[index];
@@ -158,7 +166,7 @@ export function validate(state) {
     if(!inputs.length&&!sinks.length)addIssue('管路没有通往机器或回收罐',unique);
     if(!inputs.length&&!outputs.length)addIssue('储罐和管道必须服务于机器',unique);
     if(supplies.length&&outputs.length)addIssue('供应罐与机器输出不能合流',unique);
-    if(!supplies.length&&capacity<demand)addIssue(`流量不足：产出 ${capacity}，需求 ${demand}`,unique);
+    if(!supplies.length&&capacity<demand)addIssue(`流量不足：产出 ${capacity}，需求 ${demand}（${inputs.map(n=>`${label(n.piece)} ×${n.port.amount}`).join(' + ')}）`,unique);
     if(color==='black'&&sinks.some(n=>n.piece.kind==='collector'))addIssue('黑色产品必须接入黑色回收罐',unique);
     if(outputs.some(o=>inputs.some(i=>i.piece.id===o.piece.id)))addIssue('机器输出不能连接回自身输入',unique);
     for(const output of outputs)for(const input of inputs){
