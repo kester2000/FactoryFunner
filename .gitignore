@@ -1,0 +1,8 @@
+.tools/
+node_modules/
+test-results/
+*.log
+assets/source/
+assets/tabletopia/
+assets/*sheet*
+assets/machines-*.jpg

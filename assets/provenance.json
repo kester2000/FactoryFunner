@@ -1,0 +1,925 @@
+{
+  "source": "game-bundle.unity3d",
+  "assets": [
+    {
+      "name": "Factory Funner Money Board",
+      "file": "Boar_Factory_Funner_Money_Board_a0s0.png",
+      "sprite": {
+        "x": 944,
+        "y": 903,
+        "height": 730,
+        "width": 826
+      }
+    },
+    {
+      "name": "Factory Funner Reservoirs Supply-blue",
+      "file": "Toke_Factory_Funner_Reservoirs_Supply-blue_a0s0.png",
+      "sprite": {
+        "x": 794,
+        "y": 446,
+        "height": 136,
+        "width": 135
+      }
+    },
+    {
+      "name": "Factory Funner Reservoirs Supply-green",
+      "file": "Toke_Factory_Funner_Reservoirs_Supply-green_a0s0.png",
+      "sprite": {
+        "x": 1217,
+        "y": 446,
+        "height": 136,
+        "width": 135
+      }
+    },
+    {
+      "name": "Factory Funner Reservoirs Supply-red",
+      "file": "Toke_Factory_Funner_Reservoirs_Supply-red_a0s0.png",
+      "sprite": {
+        "x": 1491,
+        "y": 446,
+        "height": 136,
+        "width": 135
+      }
+    },
+    {
+      "name": "Factory Funner Reservoirs Supply-yellow",
+      "file": "Toke_Factory_Funner_Reservoirs_Supply-yellow_a0s0.png",
+      "sprite": {
+        "x": 1902,
+        "y": 446,
+        "height": 136,
+        "width": 135
+      }
+    },
+    {
+      "name": "Factory Funner Wooden Disc 1",
+      "file": "Toke_Factory_Funner_Wooden_Disc_1_a0s0.png",
+      "sprite": {
+        "x": 2477,
+        "y": 723,
+        "height": 178,
+        "width": 178
+      }
+    },
+    {
+      "name": "Factory Funner Wooden Disc 2",
+      "file": "Toke_Factory_Funner_Wooden_Disc_2_a0s0.png",
+      "sprite": {
+        "x": 2679,
+        "y": 723,
+        "height": 178,
+        "width": 178
+      }
+    },
+    {
+      "name": "Factory Funner Wooden Disc 3",
+      "file": "Toke_Factory_Funner_Wooden_Disc_3_a0s0.png",
+      "sprite": {
+        "x": 3083,
+        "y": 723,
+        "height": 178,
+        "width": 178
+      }
+    },
+    {
+      "name": "Factory Funner Wooden Disc 4",
+      "file": "Toke_Factory_Funner_Wooden_Disc_4_a0s0.png",
+      "sprite": {
+        "x": 3443,
+        "y": 723,
+        "height": 178,
+        "width": 178
+      }
+    },
+    {
+      "name": "Factory Funner Wooden Disc 5",
+      "file": "Toke_Factory_Funner_Wooden_Disc_5_a0s0.png",
+      "sprite": {
+        "x": 3825,
+        "y": 723,
+        "height": 178,
+        "width": 178
+      }
+    },
+    {
+      "name": "Factory Funner Wooden Disc 6",
+      "file": "Toke_Factory_Funner_Wooden_Disc_6_a0s0.png",
+      "sprite": {
+        "x": 224,
+        "y": 903,
+        "height": 178,
+        "width": 178
+      }
+    },
+    {
+      "name": "FF First Token",
+      "file": "Tile_FF_First_Token_a0s0.png",
+      "sprite": {
+        "x": 1285,
+        "y": 0,
+        "height": 96,
+        "width": 96
+      }
+    },
+    {
+      "name": "FF Last Token",
+      "file": "Tile_FF_Last_Token_a0s0.png",
+      "sprite": {
+        "x": 1481,
+        "y": 0,
+        "height": 96,
+        "width": 96
+      }
+    },
+    {
+      "name": "FF Connector Tile 09",
+      "file": "Tile_FF_Connector_Tile_09_a0s0.png",
+      "sprite": {
+        "x": 3655,
+        "y": 584,
+        "height": 137,
+        "width": 135
+      }
+    },
+    {
+      "name": "FF Connector Tile 04",
+      "file": "Tile_FF_Connector_Tile_04_a0s0.png",
+      "sprite": {
+        "x": 3929,
+        "y": 584,
+        "height": 136,
+        "width": 87
+      }
+    },
+    {
+      "name": "FF Connector Tile 01",
+      "file": "Tile_FF_Connector_Tile_01_a0s0.png",
+      "sprite": {
+        "x": 190,
+        "y": 723,
+        "height": 136,
+        "width": 40
+      }
+    },
+    {
+      "name": "FF Connector Tile 02",
+      "file": "Tile_FF_Connector_Tile_02_a0s0.png",
+      "sprite": {
+        "x": 274,
+        "y": 723,
+        "height": 136,
+        "width": 87
+      }
+    },
+    {
+      "name": "FF Connector Tile 03",
+      "file": "Tile_FF_Connector_Tile_03_a0s0.png",
+      "sprite": {
+        "x": 541,
+        "y": 723,
+        "height": 136,
+        "width": 135
+      }
+    },
+    {
+      "name": "FF Connector Tile 06",
+      "file": "Tile_FF_Connector_Tile_06_a0s0.png",
+      "sprite": {
+        "x": 815,
+        "y": 0,
+        "height": 57,
+        "width": 85
+      }
+    },
+    {
+      "name": "FF Connector Tile 07",
+      "file": "Tile_FF_Connector_Tile_07_a0s0.png",
+      "sprite": {
+        "x": 1001,
+        "y": 0,
+        "height": 67,
+        "width": 134
+      }
+    },
+    {
+      "name": "FF Connector Tile 11",
+      "file": "Tile_FF_Connector_Tile_11_a0s0.png",
+      "sprite": {
+        "x": 0,
+        "y": 0,
+        "height": 48,
+        "width": 135
+      }
+    },
+    {
+      "name": "FF Connector Tile 08",
+      "file": "Tile_FF_Connector_Tile_08_a0s0.png",
+      "sprite": {
+        "x": 2100,
+        "y": 0,
+        "height": 117,
+        "width": 134
+      }
+    },
+    {
+      "name": "FF Connector Tile 05",
+      "file": "Tile_FF_Connector_Tile_05_a0s0.png",
+      "sprite": {
+        "x": 1677,
+        "y": 0,
+        "height": 99,
+        "width": 135
+      }
+    },
+    {
+      "name": "FF Connector Tile 10",
+      "file": "Tile_FF_Connector_Tile_10_a0s0.png",
+      "sprite": {
+        "x": 815,
+        "y": 723,
+        "height": 136,
+        "width": 135
+      }
+    },
+    {
+      "name": "Factory Funner Reservoirs",
+      "file": "Toke_Factory_Funner_Reservoirs_a0s0.png",
+      "sprite": {
+        "x": 2520,
+        "y": 0,
+        "height": 127,
+        "width": 111
+      }
+    },
+    {
+      "name": "Factory Funner Reservoir b",
+      "file": "Toke_Factory_Funner_Reservoir_b_a0s0.png",
+      "sprite": {
+        "x": 2871,
+        "y": 0,
+        "height": 127,
+        "width": 112
+      }
+    },
+    {
+      "name": "Factory Funner pBoard A Cian",
+      "file": "Boar_Factory_Funner_pBoard_A_Cian_a0s0.png",
+      "sprite": {
+        "x": 1784,
+        "y": 903,
+        "height": 880,
+        "width": 965
+      }
+    },
+    {
+      "name": "Factory Funner pBoard A Green",
+      "file": "Boar_Factory_Funner_pBoard_A_Green_a0s0.png",
+      "sprite": {
+        "x": 980,
+        "y": 1785,
+        "height": 881,
+        "width": 966
+      }
+    },
+    {
+      "name": "Factory Funner pBoard A Red",
+      "file": "Boar_Factory_Funner_pBoard_A_Red_a0s0.png",
+      "sprite": {
+        "x": 2763,
+        "y": 903,
+        "height": 880,
+        "width": 966
+      }
+    },
+    {
+      "name": "Factory Funner pBoard A Violet",
+      "file": "Boar_Factory_Funner_pBoard_A_Violet_a0s0.png",
+      "sprite": {
+        "x": 0,
+        "y": 1785,
+        "height": 880,
+        "width": 966
+      }
+    },
+    {
+      "name": "Factory Funner pBoard A White",
+      "file": "Boar_Factory_Funner_pBoard_A_White_a0s0.png",
+      "sprite": {
+        "x": 1960,
+        "y": 1785,
+        "height": 881,
+        "width": 965
+      }
+    },
+    {
+      "name": "Factory Funner pBoard A Yellow",
+      "file": "Boar_Factory_Funner_pBoard_A_Yellow_a0s0.png",
+      "sprite": {
+        "x": 2939,
+        "y": 1785,
+        "height": 881,
+        "width": 966
+      }
+    },
+    {
+      "name": "Factory Funner Acrylic Chips",
+      "file": "Tile_Factory_Funner_Acrylic_Chips_a0s0.png",
+      "sprite": {
+        "x": 584,
+        "y": 903,
+        "height": 178,
+        "width": 178
+      }
+    },
+    {
+      "name": "Factory Funner Connector 03",
+      "file": "Toke_Factory_Funner_Connector_03_a0s0.png",
+      "sprite": {
+        "x": 541,
+        "y": 723,
+        "height": 136,
+        "width": 135
+      }
+    },
+    {
+      "name": "Factory Funner Connector 01",
+      "file": "Toke_Factory_Funner_Connector_01_a0s0.png",
+      "sprite": {
+        "x": 190,
+        "y": 723,
+        "height": 136,
+        "width": 40
+      }
+    },
+    {
+      "name": "Factory Funner Connector 02",
+      "file": "Toke_Factory_Funner_Connector_02_a0s0.png",
+      "sprite": {
+        "x": 274,
+        "y": 723,
+        "height": 136,
+        "width": 87
+      }
+    },
+    {
+      "name": "Factory Funner Connector 04",
+      "file": "Toke_Factory_Funner_Connector_04_a0s0.png",
+      "sprite": {
+        "x": 3929,
+        "y": 584,
+        "height": 136,
+        "width": 87
+      }
+    },
+    {
+      "name": "Factory Funner Connector 06",
+      "file": "Toke_Factory_Funner_Connector_06_a0s0.png",
+      "sprite": {
+        "x": 815,
+        "y": 0,
+        "height": 57,
+        "width": 85
+      }
+    },
+    {
+      "name": "Factory Funner Connector 07",
+      "file": "Toke_Factory_Funner_Connector_07_a0s0.png",
+      "sprite": {
+        "x": 1001,
+        "y": 0,
+        "height": 67,
+        "width": 134
+      }
+    },
+    {
+      "name": "Factory Funner Connector 08",
+      "file": "Toke_Factory_Funner_Connector_08_a0s0.png",
+      "sprite": {
+        "x": 2100,
+        "y": 0,
+        "height": 117,
+        "width": 134
+      }
+    },
+    {
+      "name": "Factory Funner Connector 11",
+      "file": "Toke_Factory_Funner_Connector_11_a0s0.png",
+      "sprite": {
+        "x": 0,
+        "y": 0,
+        "height": 48,
+        "width": 135
+      }
+    },
+    {
+      "name": "Factory Funner Connector 10",
+      "file": "Toke_Factory_Funner_Connector_10_a0s0.png",
+      "sprite": {
+        "x": 815,
+        "y": 723,
+        "height": 136,
+        "width": 135
+      }
+    },
+    {
+      "name": "Factory Funner Connector 05",
+      "file": "Toke_Factory_Funner_Connector_05_a0s0.png",
+      "sprite": {
+        "x": 1677,
+        "y": 0,
+        "height": 99,
+        "width": 135
+      }
+    },
+    {
+      "name": "Factory Funner Connector 09",
+      "file": "Toke_Factory_Funner_Connector_09_a0s0.png",
+      "sprite": {
+        "x": 3655,
+        "y": 584,
+        "height": 137,
+        "width": 135
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 01",
+      "file": "Toke_Factory_Funner_Machine_Tiles_01_a0s0.png",
+      "sprite": {
+        "x": 2039,
+        "y": 446,
+        "height": 136,
+        "width": 159
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 02",
+      "file": "Toke_Factory_Funner_Machine_Tiles_02_a0s0.png",
+      "sprite": {
+        "x": 2200,
+        "y": 446,
+        "height": 136,
+        "width": 156
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 03",
+      "file": "Toke_Factory_Funner_Machine_Tiles_03_a0s0.png",
+      "sprite": {
+        "x": 3269,
+        "y": 0,
+        "height": 135,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 04",
+      "file": "Toke_Factory_Funner_Machine_Tiles_04_a0s0.png",
+      "sprite": {
+        "x": 2358,
+        "y": 446,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 05",
+      "file": "Toke_Factory_Funner_Machine_Tiles_05_a0s0.png",
+      "sprite": {
+        "x": 2517,
+        "y": 446,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 06",
+      "file": "Toke_Factory_Funner_Machine_Tiles_06_a0s0.png",
+      "sprite": {
+        "x": 3586,
+        "y": 0,
+        "height": 135,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 07",
+      "file": "Toke_Factory_Funner_Machine_Tiles_07_a0s0.png",
+      "sprite": {
+        "x": 1363,
+        "y": 723,
+        "height": 137,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 08",
+      "file": "Toke_Factory_Funner_Machine_Tiles_08_a0s0.png",
+      "sprite": {
+        "x": 1534,
+        "y": 723,
+        "height": 137,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 09",
+      "file": "Toke_Factory_Funner_Machine_Tiles_09_a0s0.png",
+      "sprite": {
+        "x": 2676,
+        "y": 446,
+        "height": 136,
+        "width": 156
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 10",
+      "file": "Toke_Factory_Funner_Machine_Tiles_10_a0s0.png",
+      "sprite": {
+        "x": 1693,
+        "y": 723,
+        "height": 137,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 11",
+      "file": "Toke_Factory_Funner_Machine_Tiles_11_a0s0.png",
+      "sprite": {
+        "x": 2834,
+        "y": 446,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 12",
+      "file": "Toke_Factory_Funner_Machine_Tiles_12_a0s0.png",
+      "sprite": {
+        "x": 2993,
+        "y": 446,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 13",
+      "file": "Toke_Factory_Funner_Machine_Tiles_13_a0s0.png",
+      "sprite": {
+        "x": 3745,
+        "y": 0,
+        "height": 135,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 14",
+      "file": "Toke_Factory_Funner_Machine_Tiles_14_a0s0.png",
+      "sprite": {
+        "x": 3152,
+        "y": 446,
+        "height": 136,
+        "width": 156
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 15",
+      "file": "Toke_Factory_Funner_Machine_Tiles_15_a0s0.png",
+      "sprite": {
+        "x": 3310,
+        "y": 446,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 16",
+      "file": "Toke_Factory_Funner_Machine_Tiles_16_a0s0.png",
+      "sprite": {
+        "x": 3469,
+        "y": 446,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 17",
+      "file": "Toke_Factory_Funner_Machine_Tiles_17_a0s0.png",
+      "sprite": {
+        "x": 3904,
+        "y": 0,
+        "height": 135,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 18",
+      "file": "Toke_Factory_Funner_Machine_Tiles_18_a0s0.png",
+      "sprite": {
+        "x": 3628,
+        "y": 446,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 19",
+      "file": "Toke_Factory_Funner_Machine_Tiles_19_a0s0.png",
+      "sprite": {
+        "x": 3787,
+        "y": 446,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 20",
+      "file": "Toke_Factory_Funner_Machine_Tiles_20_a0s0.png",
+      "sprite": {
+        "x": 0,
+        "y": 584,
+        "height": 136,
+        "width": 156
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 21",
+      "file": "Toke_Factory_Funner_Machine_Tiles_21_a0s0.png",
+      "sprite": {
+        "x": 158,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 22",
+      "file": "Toke_Factory_Funner_Machine_Tiles_22_a0s0.png",
+      "sprite": {
+        "x": 317,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 23",
+      "file": "Toke_Factory_Funner_Machine_Tiles_23_a0s0.png",
+      "sprite": {
+        "x": 476,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 29",
+      "file": "Toke_Factory_Funner_Machine_Tiles_29_a0s0.png",
+      "sprite": {
+        "x": 635,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 30",
+      "file": "Toke_Factory_Funner_Machine_Tiles_30_a0s0.png",
+      "sprite": {
+        "x": 0,
+        "y": 446,
+        "height": 135,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 31",
+      "file": "Toke_Factory_Funner_Machine_Tiles_31_a0s0.png",
+      "sprite": {
+        "x": 794,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 32",
+      "file": "Toke_Factory_Funner_Machine_Tiles_32_a0s0.png",
+      "sprite": {
+        "x": 953,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 33",
+      "file": "Toke_Factory_Funner_Machine_Tiles_33_a0s0.png",
+      "sprite": {
+        "x": 1112,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 34",
+      "file": "Toke_Factory_Funner_Machine_Tiles_34_a0s0.png",
+      "sprite": {
+        "x": 1271,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 35",
+      "file": "Toke_Factory_Funner_Machine_Tiles_35_a0s0.png",
+      "sprite": {
+        "x": 1430,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 36",
+      "file": "Toke_Factory_Funner_Machine_Tiles_36_a0s0.png",
+      "sprite": {
+        "x": 1589,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 37",
+      "file": "Toke_Factory_Funner_Machine_Tiles_37_a0s0.png",
+      "sprite": {
+        "x": 1748,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 38",
+      "file": "Toke_Factory_Funner_Machine_Tiles_38_a0s0.png",
+      "sprite": {
+        "x": 1852,
+        "y": 723,
+        "height": 137,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 39",
+      "file": "Toke_Factory_Funner_Machine_Tiles_39_a0s0.png",
+      "sprite": {
+        "x": 159,
+        "y": 446,
+        "height": 135,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 24",
+      "file": "Toke_Factory_Funner_Machine_Tiles_24_a0s0.png",
+      "sprite": {
+        "x": 1907,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 25",
+      "file": "Toke_Factory_Funner_Machine_Tiles_25_a0s0.png",
+      "sprite": {
+        "x": 318,
+        "y": 446,
+        "height": 135,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 26",
+      "file": "Toke_Factory_Funner_Machine_Tiles_26_a0s0.png",
+      "sprite": {
+        "x": 2066,
+        "y": 584,
+        "height": 136,
+        "width": 156
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 27",
+      "file": "Toke_Factory_Funner_Machine_Tiles_27_a0s0.png",
+      "sprite": {
+        "x": 2224,
+        "y": 584,
+        "height": 136,
+        "width": 158
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 28",
+      "file": "Toke_Factory_Funner_Machine_Tiles_28_a0s0.png",
+      "sprite": {
+        "x": 2384,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 40",
+      "file": "Toke_Factory_Funner_Machine_Tiles_40_a0s0.png",
+      "sprite": {
+        "x": 2543,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 41",
+      "file": "Toke_Factory_Funner_Machine_Tiles_41_a0s0.png",
+      "sprite": {
+        "x": 2702,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 42",
+      "file": "Toke_Factory_Funner_Machine_Tiles_42_a0s0.png",
+      "sprite": {
+        "x": 477,
+        "y": 446,
+        "height": 135,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 43",
+      "file": "Toke_Factory_Funner_Machine_Tiles_43_a0s0.png",
+      "sprite": {
+        "x": 636,
+        "y": 446,
+        "height": 135,
+        "width": 156
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 44",
+      "file": "Toke_Factory_Funner_Machine_Tiles_44_a0s0.png",
+      "sprite": {
+        "x": 2861,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 45",
+      "file": "Toke_Factory_Funner_Machine_Tiles_45_a0s0.png",
+      "sprite": {
+        "x": 3020,
+        "y": 584,
+        "height": 136,
+        "width": 156
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 46",
+      "file": "Toke_Factory_Funner_Machine_Tiles_46_a0s0.png",
+      "sprite": {
+        "x": 3178,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 47",
+      "file": "Toke_Factory_Funner_Machine_Tiles_47_a0s0.png",
+      "sprite": {
+        "x": 3337,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    },
+    {
+      "name": "Factory Funner Machine Tiles 48",
+      "file": "Toke_Factory_Funner_Machine_Tiles_48_a0s0.png",
+      "sprite": {
+        "x": 3496,
+        "y": 584,
+        "height": 136,
+        "width": 157
+      }
+    }
+  ]
+}

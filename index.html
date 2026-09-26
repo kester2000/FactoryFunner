@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#183d3d"><meta name="description" content="Factory Funner 单人工厂拼接游戏。安装机器，连接管道，创造更高收益。">
+  <title>Factory Funner · 我的工厂</title>
+  <link rel="icon" href="icon.svg"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="./" aria-label="Factory Funner 首页"><span class="brand-mark">F<span>F</span></span><span>FACTORY<br><strong>FUNNER<span class="brand-dot">.</span></strong></span></a>
+    <div class="header-tag"><span class="live-dot"></span> 单人工厂 <span class="tag-sep">/</span> SOLO WORKSHOP</div>
+    <nav><span id="save-status" class="save-status">自动保存</span><button id="help" class="quiet">玩法指南</button><button id="menu" class="outline">工厂菜单 <span>↗</span></button></nav>
+  </header>
+  <main class="layout">
+    <aside class="sidebar">
+      <section class="machine-section">
+        <div class="eyebrow"><span>01 / 本回合机器</span><span class="pill" id="machine-state">等待安装</span></div>
+        <div class="machine-heading"><div><h1 id="machine-name"></h1><p id="machine-id"></p></div><div class="revenue"><small>安装收入</small><strong id="revenue"></strong></div></div>
+        <button id="pick-machine" class="machine-art" aria-label="选择本回合机器"><div class="art-grid"></div><img id="machine-image" alt="本回合机器板块"><span class="art-caption">点击选择 · 在工厂空格安装 <span>↗</span></span></button>
+        <div id="machine-ports" class="port-list"></div>
+      </section>
+      <section class="supply-section">
+        <div class="eyebrow"><span>02 / 组件仓库</span><span class="muted">每件 $1</span></div>
+        <h3 class="palette-heading" id="tank-heading">储罐 <span>供应 / 回收</span></h3>
+        <div id="tank-palette" class="palette" role="group" aria-labelledby="tank-heading"></div>
+        <h3 class="palette-heading" id="pipe-heading">连接管道 <span>可同格交叉</span></h3>
+        <div id="pipe-palette" class="palette pipe-palette" role="group" aria-labelledby="pipe-heading"></div>
+        <p class="warehouse-hint" id="warehouse-hint"></p>
+      </section>
+      <section class="inspector-section"><div class="eyebrow"><span>03 / 工作台</span><span id="orientation"></span></div><div id="selection-info"></div><div class="edit-actions"><button id="rotate" title="旋转 60°（R）">↻ 旋转</button><button id="flip" title="镜像管道（F）">⇄ 镜像</button><button id="remove" title="拆除选中组件（Delete）">⌫ 拆除</button></div><div id="wild-choices"></div></section>
+      <div class="round-reset"><button id="reset-round" title="恢复本轮开始的布局，不跳过当前机器">↺ 重置本轮</button><small>恢复本轮初始布局，保留当前机器</small></div>
+      <div class="sidebar-footer">有条不紊，也能乐趣横生。<br><span>规划 · 连接 · 运转</span></div>
+    </aside>
+    <section class="workspace">
+      <div class="work-heading"><div><div class="eyebrow">YOUR LITTLE INDUSTRIAL EMPIRE</div><h2>把巧思，变成生产力<span>。</span></h2></div><button id="boards" class="board-badge" title="棋盘与单人进阶">工厂 <b id="board-id">A</b></button></div>
+      <div class="dashboard"><div class="money-stat"><span>工厂资金</span><strong id="money">$10</strong></div><div class="stat"><span title="按最终布局预估，完成安装时才扣款">待确认支出</span><strong id="cost">$0</strong></div><div class="stat"><span>连锁奖励 <small>终局结算</small></span><strong id="bonus">+$0</strong></div><div class="round-stat"><div><span>生产进度</span><b id="round-label">01 / 08</b></div><div id="rounds" class="rounds"></div></div></div>
+      <div class="board-shell">
+        <div class="board-topline"><span><span class="live-dot"></span><span id="board-title">布局阶段</span></span><div class="view-tools"><button id="undo" title="撤销（Ctrl+Z）" aria-label="撤销">↶</button><button id="redo" title="重做（Ctrl+Shift+Z）" aria-label="重做">↷</button><span></span><button id="zoom-out" aria-label="缩小">−</button><button id="zoom-fit" title="适应棋盘">适应</button><button id="zoom-in" aria-label="放大">＋</button></div></div>
+        <div id="board-viewport" class="board-viewport"><svg id="board" viewBox="-25 -20 1015 920" role="group" aria-label="工厂六边形棋盘"></svg><div id="board-guide" class="board-guide"></div></div>
+        <div class="board-bottomline"><span id="active-tool"></span><button id="select-tool">↖ 选择 / 平移</button><label><input type="checkbox" id="show-ports" checked>端口标记</label></div>
+      </div>
+      <div class="turn-footer"><div class="connection-status"><span id="status-icon" class="status-icon">○</span><div><strong id="status-title">让工厂开始运转</strong><p id="status-detail">先选择机器，再点击棋盘空格。</p></div><button id="diagnostics" class="text-button">检查连接 ↗</button></div><div class="turn-actions"><button id="skip" class="quiet">跳过本轮</button><button id="settle" class="primary">完成安装 <span>→</span></button></div></div>
+      <div class="bottom-note"><span>FACTORY FUNNER · SOLO EDITION</span><span>本地存档 · 无需账号 · 无时间限制</span></div>
+    </section>
+  </main>
+  <dialog id="modal"><div id="modal-content"></div></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <input id="import-file" type="file" accept="application/json,.json" hidden>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

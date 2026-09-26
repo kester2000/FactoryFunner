@@ -1,0 +1,66 @@
+export const COLORS = {pink:'#e64091',yellow:'#f1b83e',green:'#43ac7f',blue:'#45b9e0',black:'#263942'};
+export const COLOR_NAMES = {pink:'粉',yellow:'黄',green:'绿',blue:'蓝',black:'黑'};
+// Transcribed from the supplied Tabletopia front textures. Directions E,SE,SW,W,NW,NE.
+// Artwork rotates +30 degrees onto the pointy grid. Tuple: edge, color(s), volume.
+const rows = [
+ ['Accelerator',6,[[0,'green',1],[1,'pink',2]],[[4,'pink',3]]],
+ ['Bigtimizer',11,[[4,'yellow',1],[3,'pink',3]],[[1,'black',1]]],
+ ['Boilnado',4,[[1,'green',1]],[[4,'blue',3]]],
+ ['Boom Tube',7,[[0,'blue',3],[1,'yellow',2]],[[3,'yellow',1]]],
+ ['Boxer X',7,[[0,'green',3],[1,'blue',3]],[[4,'pink',1]]],
+ ['Compressor',3,[[3,'pink',3]],[[0,'yellow',2]]],
+ ['Cwalichecker',14,[[5,'blue',1],[0,'green',3],[1,'yellow',1]],[[3,'black',1]]],
+ ['Cannervator',12,[[5,'pink',2],[4,'yellow',2],[3,'green',1]],[[1,'pink',2]]],
+ ['Crystallizer',8,[[5,'yellow',3],[0,'green',3]],[[3,'black',1]]],
+ ['D-6 Quantizer',6,[[3,'pink',3],[1,'yellow',3]],[[5,'green',2]]],
+ ['Das Hulk',6,[[5,'pink',3],[4,'yellow',1]],[[1,'yellow',3]]],
+ ['Dinkip-82',8,[[4,'green',1],[3,'yellow',2]],[[0,'blue',2]]],
+ ['Ectotrapper',7,[[4,'pink',1],[3,'yellow',1]],[[1,'green',3]]],
+ ['Exploser',8,[[3,'pink',1],[1,'blue',1]],[[5,'blue',3]]],
+ ['Focuser',2,[[3,'yellow',2]],[[5,'green',3]]],
+ ['Fredomizer',11,[[5,'green',2],[4,'blue',1],[3,'pink',1]],[[1,'yellow',3]]],
+ ['Hexopacker',13,[[5,'pink',1],[1,'blue',1]],[[3,'black',1]]],
+ ['Lavafuzzer',9,[[5,'blue',2],[1,'green',3]],[[3,'yellow',1]]],
+ ['Magnetizer',9,[[4,'green',1],[3,'blue',1]],[[0,'pink',2]]],
+ ['Maxi Mixer',5,[[5,'green',2],[0,'pink',3]],[[3,'blue',3]]],
+ ['Max-X-Boil',9,[[0,'yellow',3],[1,'pink',1]],[[3,'blue',1]]],
+ ['Meeplor',8,[[4,'pink',3],[3,'green',1]],[[0,'yellow',2]]],
+ ['Meltdown',7,[[5,'green',2],[0,'blue',1]],[[3,'yellow',2]]],
+ ['Metamorphizor',10,[[5,'yellow',1],[0,'pink',1]],[[3,'yellow',1]]],
+ ['Moisture-stir',6,[[5,'blue',3],[0,'green',3]],[[3,'green',2]]],
+ ['Mondrianator',10,[[4,'green',3],[3,'blue',3]],[[1,'black',1]]],
+ ['Multiplier',5,[[1,'pink',1]],[[5,'pink',2]]],
+ ['Nautilus',6,[[1,'blue',1]],[[3,'pink',1]]],
+ ['Packmaster',9,[[0,'yellow',3],[1,'blue',3]],[[3,'black',1]]],
+ ['Piper',4,[[0,'pink',3],[1,'blue',2]],[[3,'yellow',3]]],
+ ['Pixellator',7,[[0,'blue',2],[1,'pink',2]],[[3,'green',2]]],
+ ['Rainbowrisor',6,[[5,'pink',3],[4,'yellow',1]],[[1,['pink','yellow','green','blue'],1]]],
+ ['Rebuilder',8,[[5,'blue',2],[0,['pink','yellow'],2]],[[3,'black',1]]],
+ ['Reduc-Tank',5,[[3,'yellow',3]],[[1,'blue',1]]],
+ ['Retrofactor',9,[[5,'blue',2],[0,'yellow',2]],[[3,'green',1]]],
+ ['Ringmaster',7,[[0,'yellow',2],[1,'blue',1]],[[4,'green',3]]],
+ ['Shredder',13,[[5,'yellow',1],[0,'pink',3],[1,'blue',2]],[[3,'green',1]]],
+ ['Solidificator',7,[[3,'blue',3],[1,'yellow',1]],[[5,'pink',3]]],
+ ['Spectrumizer',9,[[4,'yellow',3],[3,'green',3]],[[0,'pink',1]]],
+ ['The Judger',7,[[5,'blue',1]],[[3,'yellow',1]]],
+ ['Time Machine',7,[[4,'green',1]],[[1,'black',1]]],
+ ['Thinktank',9,[[5,'blue',3],[1,'green',2]],[[3,'blue',1]]],
+ ['Trifurnace',7,[[0,'blue',1],[1,'yellow',3]],[[3,'blue',2]]],
+ ['Uberlight',8,[[4,'yellow',1],[3,'green',3]],[[1,'pink',2]]],
+ ['Umeaker',7,[[0,'blue',3],[1,'green',1]],[[4,'pink',1],[3,'yellow',2]]],
+ ['Vinylnator',8,[[5,'pink',2],[1,'yellow',2]],[[3,'blue',2]]],
+ ['Zapp 3000',10,[[5,'pink',3],[1,'green',1]],[[3,'green',1]]],
+ ['Supersealer',12,[[0,'green',2],[1,'pink',1]],[[3,'black',1]]],
+];
+export const MACHINES = rows.map(([name,revenue,inputs,outputs],i)=>({id:i+1,name,revenue,image:`assets/game/Toke_Factory_Funner_Machine_Tiles_${String(i+1).padStart(2,'0')}_a0s0.png`,ports:[...inputs.map(p=>({edge:p[0],colors:Array.isArray(p[1])?p[1]:[p[1]],amount:p[2],kind:'in'})),...outputs.map(p=>({edge:p[0],colors:Array.isArray(p[1])?p[1]:[p[1]],amount:p[2],kind:'out'}))]}));
+export const PIPES = [
+ {id:'straight',name:'直管',edges:[0,3]}, {id:'bend',name:'弯管 · 120°',edges:[0,2]},
+ {id:'elbow',name:'弯管 · 60°',edges:[0,1]}, {id:'fork',name:'三通 · 均分',edges:[0,2,4]},
+ {id:'tee',name:'三通 · 侧接',edges:[0,1,3]}, {id:'fan',name:'三通 · 扇形',edges:[0,1,2]},
+ {id:'four',name:'四通 · 对称',edges:[0,1,3,4]}, {id:'four-b',name:'四通 · 侧接',edges:[0,1,2,4]},
+ {id:'four-c',name:'四通 · 扇形',edges:[0,1,2,3]}, {id:'five',name:'五通',edges:[0,1,2,3,4]},
+ {id:'six',name:'六通',edges:[0,1,2,3,4,5]},
+];
+export const ROWS = [6,7,6,7,6,7,3];
+export const BOARD = Array.from({length:7},(_,r)=>Array.from({length:ROWS[r]},(_,q)=>`${q},${r}`)).flat().filter(k=>k!=='3,3');
+export const BOARD_IMAGE='assets/game/Boar_Factory_Funner_pBoard_A_Cian_a0s0.png';
