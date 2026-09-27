@@ -181,8 +181,34 @@ test('three-way output split rewards all three inputs and survives settlement an
  // Complete the setup ledger so the final factory can be saved and restored.
  s.history=s.deck.slice(0,3).map((machineId,i)=>({round:i+1,machineId,revenue:0,cost:0,skip:false,money:10}));
  settle(s);while(!s.over)settle(s,true);
+ assert.equal(s.history[3].bonusDelta,9,'newly supplied input points are recorded for this round');
+ assert(s.history.slice(4).every(h=>h.bonusDelta===0),'skipped rounds never repeat the bonus');
  assert.equal(validate(s).bonus,9,'settlement preserves the split bonus');
- assert.equal(validate(restore(JSON.parse(JSON.stringify(s)))).bonus,9);
+ const restored=restore(JSON.parse(JSON.stringify(s)));
+ assert.equal(validate(restored).bonus,9);
+ assert.equal(restored.history[3].bonusDelta,9,'per-round bonus survives save export and import');
+ assert.equal(restored.history[0].bonusDelta,undefined,'old ledger entries remain unknown');
+ const malformed=clone(s);malformed.history[3].bonusDelta='9';
+ assert.throws(()=>restore(malformed),/连锁记录/);
+});
+
+test('round bonus records only the change, including loss, without adding it to cash',()=>{
+ const s=setup();
+ // Valid prior layout with a machine-fed input worth $3.
+ const previous=newGame('previous');previous.deck=[3,40,1,2,4,5,6,7];
+ const a=place(previous,{kind:'machine'},3,2);
+ place(previous,{kind:'supply',color:'green'},...neighbor(a.q,a.r,1));
+ previous.round=2;const b=place(previous,{kind:'machine'},...neighbor(a.q,a.r,4),2);
+ const output=ports(b).find(p=>p.kind==='out');
+ place(previous,{kind:'collector'},...neighbor(b.q,b.r,output.edge),(output.edge+3)%6);
+ assert.equal(validate(previous).valid,true);
+ assert.equal(validate(previous).bonus,3);
+ s.baseline=clone(previous.pieces);
+ // Both layouts are valid; this unit checks ledger accounting, independent of editing restrictions.
+ settle(s);
+ assert.equal(s.history[0].bonusDelta,-3);
+ assert.equal(s.money,10+s.history[0].revenue-s.history[0].cost,'bonus changes are not cash transactions');
+ const skipped=setup();settle(skipped,true);assert.equal(skipped.history[0].bonusDelta,0);
 });
 
 test('self-return loops and source/machine merging are rejected',()=>{

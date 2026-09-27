@@ -211,14 +211,15 @@ export function resetRound(state) {
 }
 export function settle(state,skip=false) {
   if(state.over)throw Error('本局已结束');
-  let revenue=0,cost=0;
+  let revenue=0,cost=0,bonusDelta=0;
   if(skip){state.pieces=clone(state.baseline);} else {
     const current=state.pieces.find(p=>p.kind==='machine'&&p.round===state.round);
     if(!current)throw Error('请先安装本回合机器，或选择跳过');
     const result=validate(state);if(!result.valid)throw Error('还有未通过的连接，请检查诊断面板');
+    bonusDelta=result.bonus-validate({...state,pieces:state.baseline}).bonus;
     revenue=machine(current.machineId).revenue;cost=installationCost(state);state.money+=revenue-cost;
   }
-  state.history.push({round:state.round,machineId:state.deck[state.round-1],revenue,cost,skip,money:state.money});
+  state.history.push({round:state.round,machineId:state.deck[state.round-1],revenue,cost,bonusDelta,skip,money:state.money});
   state.baseline=clone(state.pieces);state.cost=0;
   if(state.round===8)state.over=true;else state.round++;
 }
@@ -226,6 +227,7 @@ export function restore(value) {
   if(!value||value.version!==1||!Array.isArray(value.deck)||value.deck.length!==8||new Set(value.deck).size!==8||value.deck.some(id=>!MACHINES.some(m=>m.id===id)))throw Error('存档牌组无效');
   if(!Number.isInteger(value.round)||value.round<1||value.round>8||!Number.isFinite(value.money)||!Number.isFinite(value.cost)||value.cost<0||!Number.isInteger(value.nextId)||!Array.isArray(value.history)||typeof value.seed!=='string'||typeof value.over!=='boolean')throw Error('存档格式无效');
   if(value.history.length!==(value.over?8:value.round-1)||value.history.some((h,i)=>!h||h.round!==i+1||h.machineId!==value.deck[i]||typeof h.skip!=='boolean'||![h.revenue,h.cost,h.money].every(Number.isFinite)))throw Error('存档账本无效');
+  if(value.history.some(h=>h.bonusDelta!==undefined&&(!Number.isSafeInteger(h.bonusDelta)||h.bonusDelta%3!==0||(h.skip&&h.bonusDelta!==0))))throw Error('存档连锁记录无效');
   // Older versions used cyan geometry for every skin. Keep those pieces intact.
   if(!value.aLayoutVersion&&(value.boardId||'A')==='A'&&BOARD_SKINS.some(s=>s.id===value.boardSkin)){
     const pieces=[...(value.pieces||[]),...(value.baseline||[])],target=boardCells(value);
