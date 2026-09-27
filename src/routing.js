@@ -1,5 +1,5 @@
-import {PIPES,ROWS} from './data.js';
-import {playableBoard} from './boards.js';
+import {PIPES} from './data.js';
+import {playableBoard,boardGridCells} from './boards.js';
 import {center,neighbor,key,mod,clone,ports,pipeEdges,place,placementError,installationCost} from './engine.js';
 
 export function edgeBetween(a,b){
@@ -21,7 +21,7 @@ function clipHex(a,b,q,r){
   return hi-lo>1e-7?{q,r,lo,hi}:null;
 }
 export function tracePipeStroke(state,points){
-  const allowed=new Set(playableBoard(state.boardId).cells),path=[];
+  const allowed=new Set(playableBoard(state.boardId,state.boardSkin).cells),path=[];
   const append=cell=>{
     if(!allowed.has(key(cell.q,cell.r)))throw Error('划线经过墙壁或障碍，请绕开');
     const last=path.at(-1);if(last&&last.q===cell.q&&last.r===cell.r)return;
@@ -33,7 +33,7 @@ export function tracePipeStroke(state,points){
   };
   for(let i=1;i<points.length;i++){
     const a=points[i-1],b=points[i];if(Math.hypot(a.x-b.x,a.y-b.y)<1e-6)continue;
-    const hits=ROWS.flatMap((count,r)=>Array.from({length:count},(_,q)=>clipHex(a,b,q,r))).filter(Boolean).sort((a,b)=>a.lo-b.lo||b.hi-a.hi);
+    const hits=boardGridCells(state.boardId,state.boardSkin).map(cell=>{const [q,r]=cell.split(',').map(Number);return clipHex(a,b,q,r);}).filter(Boolean).sort((a,b)=>a.lo-b.lo||b.hi-a.hi);
     let covered=0;
     for(const hit of hits){
       if(hit.lo>covered+1e-5)throw Error('划线超出棋盘，请在格子内铺管');
@@ -57,7 +57,7 @@ export function planPipePath(state,path){
   if(new Set(path.map(p=>key(p.q,p.r))).size!==path.length)throw Error('一条划线不能重复绕回同一格');
   const draft=clone(state),ids=[];
   for(let i=0;i<path.length;i++){
-    const cell=path[i];if(!playableBoard(state.boardId).cells.includes(key(cell.q,cell.r)))throw Error('划线经过墙壁或障碍，请绕开');
+    const cell=path[i];if(!playableBoard(state.boardId,state.boardSkin).cells.includes(key(cell.q,cell.r)))throw Error('划线经过墙壁或障碍，请绕开');
     const edges=[];
     if(i)edges.push(edgeBetween(cell,path[i-1]));
     if(i+1<path.length)edges.push(edgeBetween(cell,path[i+1]));

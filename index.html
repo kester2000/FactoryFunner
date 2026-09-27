@@ -28,19 +28,19 @@
         <div id="pipe-palette" class="palette pipe-palette" role="group" aria-labelledby="pipe-heading"></div>
         <p class="warehouse-hint" id="warehouse-hint"></p>
       </section>
-      <section class="inspector-section"><div class="eyebrow"><span>03 / 工作台</span><span id="orientation"></span></div><div id="selection-info"></div><div class="edit-actions"><button id="rotate" title="旋转 60°（R）">↻ 旋转</button><button id="flip" title="镜像管道（F）">⇄ 镜像</button><button id="remove" title="拆除选中组件（Delete）">⌫ 拆除</button></div><div id="wild-choices"></div></section>
-      <div class="round-reset"><button id="reset-round" title="恢复本轮开始的布局，不跳过当前机器">↺ 重置本轮</button><small>恢复本轮初始布局，保留当前机器</small></div>
+
       <div class="sidebar-footer">有条不紊，也能乐趣横生。<br><span>规划 · 连接 · 运转</span></div>
     </aside>
     <section class="workspace">
-      <div class="work-heading"><div><div class="eyebrow">YOUR LITTLE INDUSTRIAL EMPIRE</div><h2>把巧思，变成生产力<span>。</span></h2></div><button id="boards" class="board-badge" title="棋盘与单人进阶">工厂 <b id="board-id">A</b></button></div>
+      <div class="work-heading"><div><div class="eyebrow">YOUR LITTLE INDUSTRIAL EMPIRE</div><h2>把巧思，变成生产力<span>。</span></h2></div><button id="boards" class="board-badge" title="选择 A 面布局">工厂 <b id="board-id">A</b></button></div>
       <div class="dashboard"><div class="money-stat"><span>工厂资金</span><strong id="money">$10</strong></div><div class="stat"><span title="按最终布局预估，完成安装时才扣款">待确认支出</span><strong id="cost">$0</strong></div><div class="stat"><span>连锁奖励 <small>终局结算</small></span><strong id="bonus">+$0</strong></div><div class="round-stat"><div><span>生产进度</span><b id="round-label">01 / 08</b></div><div id="rounds" class="rounds"></div></div></div>
       <div class="board-shell">
-        <div class="board-topline"><span><span class="live-dot"></span><span id="board-title">布局阶段</span></span><div class="view-tools"><button id="undo" title="撤销（Ctrl+Z）" aria-label="撤销">↶</button><button id="redo" title="重做（Ctrl+Shift+Z）" aria-label="重做">↷</button><span></span><button id="zoom-out" aria-label="缩小">−</button><button id="zoom-fit" title="适应棋盘">适应</button><button id="zoom-in" aria-label="放大">＋</button></div></div>
-        <div id="board-viewport" class="board-viewport"><svg id="board" viewBox="-25 -20 1015 920" role="group" aria-label="工厂六边形棋盘"></svg><div id="board-guide" class="board-guide"></div></div>
-        <div class="board-bottomline"><span id="active-tool"></span><button id="route-tool" aria-pressed="false" title="按住右键划线铺管；触屏可开启此模式后拖动">划线铺管</button><button id="select-tool">↖ 选择 / 平移</button><label><input type="checkbox" id="show-ports" checked>端口标记</label></div>
+        <div class="board-topline"><span><span class="live-dot"></span><span id="board-title">布局阶段</span></span><div class="view-tools"><button id="undo" title="撤销（Ctrl+Z）" aria-label="撤销">↶</button><button id="redo" title="重做（Ctrl+Shift+Z）" aria-label="重做">↷</button><span></span><div class="edit-actions"><button id="rotate" title="旋转 60°（R）">↻ 旋转</button><button id="flip" title="镜像管道（F）">⇄ 镜像</button><button id="remove" title="拆除选中组件（Delete）">⌫ 拆除</button></div></div></div>
+        <div class="board-round-actions" role="group" aria-label="本轮操作"><button id="reset-round" title="恢复本轮开始的布局，不跳过当前机器">↺ 重置本轮</button><button id="skip" class="quiet">跳过本轮</button><button id="settle" class="primary">完成安装 <span>→</span></button></div>
+        <div id="board-viewport" class="board-viewport"><svg id="board" viewBox="-25 -20 1015 920" preserveAspectRatio="xMidYMid meet" role="group" aria-label="工厂六边形棋盘"></svg><div id="board-guide" class="board-guide"></div></div>
+        <div class="board-bottomline"><span id="active-tool"></span><button id="route-tool" aria-pressed="false" title="按住右键划线铺管；触屏可开启此模式后拖动">划线铺管</button><button id="select-tool">↖ 选择组件</button><label><input type="checkbox" id="show-ports">端口标记</label></div><div id="pipe-layers"></div>
       </div>
-      <div class="turn-footer"><div class="connection-status"><span id="status-icon" class="status-icon">○</span><div><strong id="status-title">让工厂开始运转</strong><p id="status-detail">先选择机器，再点击棋盘空格。</p></div><button id="diagnostics" class="text-button">检查连接 ↗</button></div><div class="turn-actions"><button id="skip" class="quiet">跳过本轮</button><button id="settle" class="primary">完成安装 <span>→</span></button></div></div>
+      <div class="turn-footer"><div class="connection-status"><span id="status-icon" class="status-icon">○</span><div><strong id="status-title">让工厂开始运转</strong><p id="status-detail">先选择机器，再点击棋盘空格。</p></div><button id="diagnostics" class="text-button">检查连接 ↗</button></div></div>
       <div class="bottom-note"><span>FACTORY FUNNER · SOLO EDITION</span><span>本地存档 · 无需账号 · 无时间限制</span></div>
     </section>
   </main>

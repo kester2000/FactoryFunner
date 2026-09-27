@@ -1,8 +1,8 @@
 import {MACHINES,PIPES,COLOR_NAMES} from './data.js';
-import {BOARD_ORDER,BOARD_SKINS,playableBoard,progressionForScore} from './boards.js';
+import {BOARDS,BOARD_SKINS,playableBoard,progressionForScore,progressionOrder} from './boards.js';
 export const clone = value=>structuredClone(value);
 export const key = (q,r)=>`${q},${r}`;
-const boardCells = state=>new Set(playableBoard(state.boardId).cells);
+const boardCells = state=>new Set(playableBoard(state.boardId,state.boardSkin).cells);
 export const mod = n=>(n%6+6)%6;
 export function neighbor(q,r,e) {
   if(e===0)return [q+1,r]; if(e===3)return [q-1,r];
@@ -40,22 +40,24 @@ export function seededRandom(seed) {
 }
 export function newGame(seed='factory',tutorial=false,options={}) {
   const boardId=tutorial?'A':options.boardId||'A';playableBoard(boardId);
+  const series=options.series||(boardId.startsWith('C')?'web':'original');
+  if(!progressionOrder(series).includes(boardId))throw Error('棋盘与进阶系列不匹配');
   const boardSkin=options.boardSkin||'Cian';
   if(!BOARD_SKINS.some(s=>s.id===boardSkin))throw Error('未知棋盘配色');
   const rand=seededRandom(seed),deck=MACHINES.map(m=>m.id);
   for(let i=deck.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
   if(tutorial){deck.splice(deck.indexOf(41),1);deck.unshift(41);}
-  return {version:1,seed,tutorial,boardId,boardSkin,campaign:[],round:1,money:10,deck:deck.slice(0,8),pieces:[],baseline:[],cost:0,nextId:1,history:[],over:false};
+  return {version:1,aLayoutVersion:1,seed,tutorial,boardId,boardSkin,series,campaign:[],round:1,money:10,deck:deck.slice(0,8),pieces:[],baseline:[],cost:0,nextId:1,history:[],over:false};
 }
 export function campaignResult(state){
   if(!state.over)throw Error('完成八回合后才能结算进阶');
   const result=validate(state);
   if(!result.valid)throw Error('当前工厂连接无效，不能用于进阶');
-  return progressionForScore(state.boardId||'A',state.money+result.bonus);
+  return progressionForScore(state.boardId||'A',state.money+result.bonus,state.series||'original');
 }
 export function nextCampaignGame(state,seed){
   const result=campaignResult(state);
-  const next=newGame(seed,false,{boardId:result.nextBoardId,boardSkin:state.boardSkin});
+  const next=newGame(seed,false,{boardId:result.nextBoardId,boardSkin:state.boardSkin,series:result.series});
   next.campaign=[...(state.campaign||[]),{...result,seed:state.seed}];
   return next;
 }
@@ -224,11 +226,18 @@ export function restore(value) {
   if(!value||value.version!==1||!Array.isArray(value.deck)||value.deck.length!==8||new Set(value.deck).size!==8||value.deck.some(id=>!MACHINES.some(m=>m.id===id)))throw Error('存档牌组无效');
   if(!Number.isInteger(value.round)||value.round<1||value.round>8||!Number.isFinite(value.money)||!Number.isFinite(value.cost)||value.cost<0||!Number.isInteger(value.nextId)||!Array.isArray(value.history)||typeof value.seed!=='string'||typeof value.over!=='boolean')throw Error('存档格式无效');
   if(value.history.length!==(value.over?8:value.round-1)||value.history.some((h,i)=>!h||h.round!==i+1||h.machineId!==value.deck[i]||typeof h.skip!=='boolean'||![h.revenue,h.cost,h.money].every(Number.isFinite)))throw Error('存档账本无效');
+  // Older versions used cyan geometry for every skin. Keep those pieces intact.
+  if(!value.aLayoutVersion&&(value.boardId||'A')==='A'&&BOARD_SKINS.some(s=>s.id===value.boardSkin)){
+    const pieces=[...(value.pieces||[]),...(value.baseline||[])],target=boardCells(value);
+    if(pieces.some(p=>!target.has(key(p.q,p.r))))value={...value,boardSkin:'Cian'};
+  }
   const boardSet=boardCells(value);
+  const series=value.series||(value.boardId?.startsWith('C')?'web':'original');
+  if(!progressionOrder(series).includes(value.boardId||'A'))throw Error('存档棋盘与进阶系列不匹配');
   if(value.boardSkin!==undefined&&!BOARD_SKINS.some(s=>s.id===value.boardSkin))throw Error('存档棋盘配色无效');
   if(value.campaign!==undefined&&(!Array.isArray(value.campaign)||value.campaign.length>10000||value.campaign.some(run=>{
-    if(!run||!BOARD_ORDER.includes(run.boardId)||!Number.isFinite(run.total)||typeof run.seed!=='string')return true;
-    const expected=progressionForScore(run.boardId,run.total);
+    if(!run||!BOARDS.some(b=>b.id===run.boardId)||!Number.isFinite(run.total)||typeof run.seed!=='string')return true;
+    const expected=progressionForScore(run.boardId,run.total,run.series);
     return expected.nextBoardId!==run.nextBoardId||expected.action!==run.action||expected.completed!==run.completed;
   })))throw Error('存档进阶记录无效');
   for(const pieces of [value.pieces,value.baseline]){
@@ -245,6 +254,7 @@ export function restore(value) {
   }
   const restored=clone(value);
   restored.boardId||='A';restored.boardSkin||='Cian';restored.campaign||=[];
+  restored.series=series;restored.aLayoutVersion=1;
   restored.cost=restored.over?0:installationCost(restored);
   return restored;
 }
