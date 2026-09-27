@@ -96,6 +96,10 @@ function render(){
     if(port.colors.length<2)return;
     $('machine-ports').insertAdjacentHTML('beforeend',autoColorInfo(currentPiece,port,index));
   });
+  function autoColorInfo(piece,port,index){
+    const color=piece?result.portColors[`${piece.id}:${index}`]:null;
+    return `<div class="rainbow-choice"><strong>${port.kind==='out'?'彩虹输出':'双色输入'} · ${port.amount} 单位 · 自动匹配</strong><p class="auto-color" data-auto-color="${color||''}">${color?`<i class="color-dot" style="--dot:${COLORS[color]}"></i>自动采用${COLOR_NAMES[color]}色 ×${port.amount}`:piece?'连接颜色不兼容':'连接后自动选择颜色'}</p><small>根据整条管路统一选择一种颜色，无需手动操作。</small></div>`;
+  }
   $('money').textContent=`$${game.money}`;$('cost').textContent=`−$${game.cost}`;$('bonus').textContent=`+$${result.bonus}`;
   $('round-label').textContent=`${String(game.round).padStart(2,'0')} / 08`;$('rounds').innerHTML=Array.from({length:8},(_,i)=>`<i class="${i<game.history.length?'done':i===game.round-1?'current':''}" title="第 ${i+1} 回合"></i>`).join('');
   $('board-title').textContent=game.over?'生产完成 · 查看你的工厂':'布局阶段 · 不用着急，慢慢规划';
