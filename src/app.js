@@ -102,8 +102,10 @@ function render(){
   $('undo').disabled=!undo.length||game.over;$('redo').disabled=!redo.length||game.over;
   $('reset-round').disabled=game.over||JSON.stringify(game.pieces)===JSON.stringify(game.baseline);
   $('settle').disabled=!game.over&&(!placed()||!result.valid);$('settle').innerHTML=game.over?'查看本局成绩 <span>↗</span>':`完成安装 <span>→</span>`;$('skip').disabled=game.over;
-  const active=game.over?'本局已完成':p?label(p):tool?.kind==='machine'?'安装机器':tool?.kind==='pipe'?PIPES.find(x=>x.id===tool.shape).name:tool?label(tool):'选择组件';
+  const active=game.over?'本局已完成':p?label(p):tool?.kind==='machine'?'安装机器':tool?.kind==='pipe'?PIPES.find(x=>x.id===tool.shape).name:tool?label(tool):'浏览模式';
   $('active-tool').textContent=active;
+  $('seed-badge').textContent=`种子 ${game.seed}`;
+  $('seed-badge').title=`点击复制种子「${game.seed}」；新对局时填入相同种子并选择${game.boardId==='A'?(BOARD_SKINS.find(s=>s.id===game.boardSkin)||{name:'同一'}).name+' A 面':'同一棋盘'}，可得到相同的 8 台机器顺序`;
   $('remove').disabled=!p||game.over||(p.kind==='machine'&&p.round<game.round);
   $('rotate').disabled=game.over||(!tool&&!p)||(p?.kind==='machine'&&p.round<game.round);
   $('flip').disabled=game.over||(p?.kind??tool?.kind)!=='pipe';
@@ -158,6 +160,15 @@ $('rotate').onclick=()=>{if(selected)change(()=>rotate(game,selected));else{rota
 $('flip').onclick=()=>{if(selected)change(()=>rotate(game,selected,0,true));else{flipped=!flipped;render();}};
 $('remove').onclick=()=>{if(selected)change(()=>{remove(game,selected);selected=null;});};
 $('select-tool').onclick=()=>{tool=null;routeMode=false;hover=null;selected=null;render();};
+async function copyText(text){
+  try{await navigator.clipboard.writeText(text);}
+  catch{
+    const input=document.createElement('input');input.value=text;document.body.append(input);input.select();
+    try{document.execCommand('copy');}catch{}
+    input.remove();
+  }
+}
+$('seed-badge').onclick=async()=>{await copyText(game.seed);toast(`种子 ${game.seed} 已复制，新对局填入即可得到相同机器顺序`);};
 $('route-tool').onclick=()=>{routeMode=!routeMode;tool=null;hover=null;selected=null;render();toast(routeMode?'划线铺管：拖过需要连接的格子，松开铺设；Esc 取消':'已退出划线铺管');};
 $('undo').onclick=()=>{if(!undo.length||game.over)return;redo.push(clone(game));game=undo.pop();selected=null;hover=null;save();render();};
 $('redo').onclick=()=>{if(!redo.length||game.over)return;undo.push(clone(game));game=redo.pop();selected=null;hover=null;save();render();};
@@ -343,8 +354,8 @@ function confirmNew(tutorial=false,skin=game.boardSkin||'Cian'){
   $('cancel-new').onclick=()=>$('modal').close();
   $('confirm-new').onclick=()=>start($('seed').value.trim(),tutorial,{boardId:'A',boardSkin:$('new-board').value,series:'original'});
 }
-$('menu').onclick=()=>{modal('工厂菜单','你的进度自动保存在当前浏览器。',`<div class="menu-grid"><button id="board-menu">选择 A 面 <small>预览和切换六种原版布局</small></button><button id="new-game" class="primary">新工厂 <small>随机 8 台机器，全新规划</small></button><button id="tutorial-game">引导对局 <small>从第一台机器开始学习</small></button><button id="export">导出存档 <small>保存文件，跨设备继续</small></button><button id="import">导入存档 <small>读取之前导出的 JSON</small></button><button id="ledger">本局账本 <small>查看每轮收入和支出</small></button><button id="catalog">机器图鉴 <small>查看完整 48 张机器</small></button></div><p class="muted">对局种子：<b>${escape(game.seed)}</b><br>规则：单人模式 · 工厂 ${game.boardId||'A'} · 无时间限制</p>`);
-  $('board-menu').onclick=()=>showBoards();$('new-game').onclick=()=>confirmNew();$('tutorial-game').onclick=()=>confirmNew(true);$('export').onclick=exportSave;$('import').onclick=()=>$('import-file').click();$('ledger').onclick=showLedger;$('catalog').onclick=showCatalog;
+$('menu').onclick=()=>{modal('工厂菜单','你的进度自动保存在当前浏览器。',`<div class="menu-grid"><button id="board-menu">选择 A 面 <small>预览和切换六种原版布局</small></button><button id="new-game" class="primary">新工厂 <small>随机 8 台机器，全新规划</small></button><button id="tutorial-game">引导对局 <small>从第一台机器开始学习</small></button><button id="welcome-replay">欢迎界面 <small>重看首次开张的欢迎弹窗</small></button><button id="export">导出存档 <small>保存文件，跨设备继续</small></button><button id="import">导入存档 <small>读取之前导出的 JSON</small></button><button id="ledger">本局账本 <small>查看每轮收入和支出</small></button><button id="catalog">机器图鉴 <small>查看完整 48 张机器</small></button></div><p class="muted">对局种子：<b>${escape(game.seed)}</b><br>规则：单人模式 · 工厂 ${game.boardId||'A'} · 无时间限制</p>`);
+  $('board-menu').onclick=()=>showBoards();$('new-game').onclick=()=>confirmNew();$('tutorial-game').onclick=()=>confirmNew(true);$('welcome-replay').onclick=()=>showWelcome(true);$('export').onclick=exportSave;$('import').onclick=()=>$('import-file').click();$('ledger').onclick=showLedger;$('catalog').onclick=showCatalog;
 };
 function exportSave(){const blob=new Blob([JSON.stringify(game,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`factory-funner-round-${game.round}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('存档已导出');}
 $('import-file').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>500000)throw Error('存档文件过大');const imported=restore(JSON.parse(await file.text()));modal('导入这份存档？',`第 ${imported.round} 回合 · 资金 $${imported.money}`,`<p>导入会替换当前浏览器中的对局。</p><div class="modal-actions"><button id="import-cancel">取消</button><button id="import-confirm" class="primary">导入并继续 →</button></div>`);$('import-cancel').onclick=()=>$('modal').close();$('import-confirm').onclick=()=>{game=imported;undo=[];redo=[];selected=null;tool=null;save();render();resetCamera();$('modal').close();toast('存档已恢复');};}catch(error){toast('无法导入：'+error.message);}};
@@ -355,9 +366,25 @@ $('diagnostics').onclick=()=>{diagnose=true;drawBoard();modal('连接诊断',res
 function finishRound(skip=false){try{settle(game,skip);undo=[];redo=[];selected=null;tool=game.over?null:{kind:'machine'};rotation=0;flipped=false;diagnose=false;save();render();if(game.over)showResults();else toast(skip?'已跳过本轮，棋盘恢复到上轮结算状态。':`安装完成，进入第 ${game.round} 回合。`);}catch(error){toast(error.message);}}
 $('settle').onclick=()=>game.over?showResults():finishRound();
 $('skip').onclick=()=>{modal('跳过本回合？','单人模式跳过机器没有罚款。','<p>本回合的所有改动将撤销，工厂恢复至上回合结算后的布局，然后翻开下一台机器。</p><div class="modal-actions"><button id="cancel-skip">继续规划</button><button id="confirm-skip" class="primary">跳过本轮 →</button></div>');$('cancel-skip').onclick=()=>$('modal').close();$('confirm-skip').onclick=()=>{$('modal').close();finishRound(true);};};
-function showResults(){const bonus=validate(game).bonus,total=game.money+bonus;let best=total;try{best=Math.max(total,Number(localStorage.getItem(BEST))||0);localStorage.setItem(BEST,String(best));}catch{}modal('这一班，干得漂亮。',total>=50?'高效运转的工厂，来自精心安排的每一条管道。':'你的第一条生产线，已经有了自己的模样。',`<div class="result-score">$${total}</div><div class="result-caption">工厂最终收益 · 本机最高 $${best}</div><div class="score-breakdown"><span>资金 $${game.money}</span><span>连锁奖励 +$${bonus}</span></div>${ledgerHTML()}<div class="modal-actions"><button id="review">看看我的工厂</button><button id="again" class="primary">再建一座工厂 →</button></div>`);$('review').onclick=()=>$('modal').close();$('again').onclick=()=>confirmNew();}
+function showResults(){
+  const bonus=validate(game).bonus,total=game.money+bonus;let best=total;
+  try{best=Math.max(total,Number(localStorage.getItem(BEST))||0);localStorage.setItem(BEST,String(best));}catch{}
+  const boardArt=`<svg class="result-board" viewBox="0 0 965 880" role="img" aria-label="最终工厂布局">${boardBackground(game.boardId)}${game.pieces.map(pieceMarkup).join('')}</svg>`;
+  const skinName=game.boardId==='A'?` · ${(BOARD_SKINS.find(s=>s.id===game.boardSkin)||{name:'原版'}).name} A 面`:'';
+  const skipped=game.history.filter(h=>h.skip).length;
+  const income=game.history.reduce((s,h)=>s+h.revenue,0),spend=game.history.reduce((s,h)=>s+h.cost,0);
+  const chips=game.history.map(h=>`<span class="${h.skip?'skip':''}" title="第 ${h.round} 轮 · ${machine(h.machineId).name}${h.skip?' · 跳过':''} · 收入 +$${h.revenue} · 支出 −$${h.cost}">R${h.round} ${h.skip?'跳过':'+$'+(h.revenue-h.cost)}</span>`).join('');
+  modal('这一班，干得漂亮。',total>=50?'高效运转的工厂，来自精心安排的每一条管道。':'你的第一条生产线，已经有了自己的模样。',`${boardArt}<div class="result-score">$${total}</div><div class="result-caption">工厂最终收益 · 本机最高 $${best}</div><div class="score-breakdown"><span>资金 $${game.money}</span><span>连锁奖励 +$${bonus}</span></div><div class="result-seed"><button id="result-seed" title="点击复制，新对局填入可得到相同机器顺序">种子 ${escape(game.seed)} ⧉</button><span>${skinName.slice(3)||'工厂 '+game.boardId}</span></div><div class="round-chips">${chips}</div><p class="result-summary">八轮收入 +$${income} · 组件支出 −$${spend}${skipped?` · 跳过 ${skipped} 轮`:''}</p><details><summary>查看完整账本</summary>${ledgerHTML()}</details><div class="modal-actions"><button id="review">看看我的工厂</button><button id="again" class="primary">再建一座工厂 →</button></div>`);
+  $('result-seed').onclick=async()=>{await copyText(game.seed);toast(`种子 ${game.seed} 已复制，新对局填入即可得到相同机器顺序`);};
+  $('review').onclick=()=>$('modal').close();$('again').onclick=()=>confirmNew();
+}
 $('help').onclick=()=>modal('欢迎来到你的工厂','把每一台奇妙机器，接进井然有序的生产线。',`<div class="rule-step"><b>01</b><div><strong>选机器，找个好位置</strong><br>每轮只有一台机器，点击选中后放到空格。旋转让端口面向更合适的方向。</div></div><div class="rule-step"><b>02</b><div><strong>把每个接口连起来</strong><br>彩色罐提供无限原料；白罐回收一种彩色产物，黑罐回收成品。机器也能直接相邻连接。管道交叉不相通，三通和多通才会汇流。</div></div><div class="rule-step"><b>03</b><div><strong>检查，再完成安装</strong><br>颜色要相同，机器供给量必须覆盖需求；不能把供应罐和机器输出合流。机器不能接回自身输入。</div></div><div class="rule-step"><b>04</b><div><strong>八轮之后，看看收益</strong><br>初始 $10；安装机器获得收入，点击完成安装时，最终新增或调整的组件每件花 $1。机器供给的每个输入点在终局奖励 $3。</div></div><p class="muted">R 旋转 · F 镜像管道 · Delete 拆除 · Ctrl+Z 撤销<br>拖动组件移动 · 棋盘固定自动适应 · 棋盘上方可旋转、镜像和拆除<br>已结算的机器不能移动；试放、拆除和反复旋转不累加费用；恢复到上轮布局不收费。</p><p><a href="https://c.tabletopia.com/games/factory-funner/rules/factory-funner-rulebook/en" target="_blank" rel="noreferrer">查看原版规则 ↗</a></p><p class="muted">本版使用提供的 Tabletopia 原版素材，支持单人工厂 A。管道使用清晰的矢量图显示连接关系。可切换六种原版 A 面，格子范围随板面切换。</p>`);
 render();save();
-if(!loaded){modal('你的工厂，今天开张。','FACTORY FUNNER · 单人模式',`<img src="assets/cover.png" class="welcome-art" alt="Factory Funner 桌游封面"><p>八台机器，一座工厂。把储罐与管道巧妙连接，让每一次安装都创造新的收益。</p><p class="muted">没有计时器，没有抢夺。专注享受规划的乐趣，进度会自动保存在这里。</p><div class="modal-actions"><button id="welcome-random">直接开始随机局</button><button id="welcome-tutorial" class="primary">跟随引导开工 →</button></div>`);$('welcome-tutorial').onclick=()=>$('modal').close();$('welcome-random').onclick=()=>start();}
+function showWelcome(replay=false){
+  modal('你的工厂，今天开张。','FACTORY FUNNER · 单人模式',`<img src="assets/cover.png" class="welcome-art" alt="Factory Funner 桌游封面"><p>八台机器，一座工厂。把储罐与管道巧妙连接，让每一次安装都创造新的收益。</p><p class="muted">没有计时器，没有抢夺。专注享受规划的乐趣，进度会自动保存在这里。</p><div class="modal-actions"><button id="welcome-random">我是老手，跳过引导对局</button><button id="welcome-tutorial" class="primary">我是新手，开始规则教学 →</button></div>`);
+  $('welcome-tutorial').onclick=()=>replay?start('FIRST-SHIFT',true):$('modal').close();
+  $('welcome-random').onclick=()=>start();
+}
+if(!loaded)showWelcome();
 if(saveError)toast('浏览器存档不可用或原存档损坏，请使用菜单导出保存。');
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});

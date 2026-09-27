@@ -27,3 +27,20 @@ dialog{border:1px solid var(--line);border-radius:16px;max-width:590px;width:cal
 #pipe-layers:empty{display:none}.board-shell>#pipe-layers:not(:empty){padding:10px 14px;border-top:1px solid var(--line);background:var(--paper)}
 
 .board-round-actions{display:flex;justify-content:flex-end;gap:8px;padding:0 16px 9px;background:#f9faf4;border-bottom:1px solid var(--line)}.board-round-actions button{min-height:44px;padding:8px 12px;font-size:12px;white-space:nowrap}.board-round-actions .primary span{margin-left:6px}@media(max-width:760px){.board-round-actions{padding:2px 8px 8px;gap:6px}.board-round-actions button{flex:1;min-width:0;font-size:11px;padding:8px 5px}.board-round-actions .primary{flex:1.25}}
+
+#seed-badge{font-family:ui-monospace,Consolas,monospace;font-size:10px;color:var(--muted);white-space:nowrap;letter-spacing:.3px;border:1px dashed #c4cdbc;border-radius:6px;background:transparent;padding:4px 9px}
+#seed-badge:hover{color:var(--ink);border-color:var(--orange);border-style:solid}
+@media(max-width:760px){#seed-badge{font-size:9px;padding:3px 6px}}
+
+/* 结算界面：工厂图 + 种子 + 回合徽章 */
+.result-board{display:block;width:100%;max-height:270px;margin:6px auto 2px;border-radius:12px;background:#d2d6c8}
+.result-seed{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 4px}
+.result-seed button{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--ink);background:#f4f6ed;border:1px dashed #b9c5ae;border-radius:6px;padding:6px 12px;min-height:0}
+.result-seed button:hover{border-color:var(--orange);border-style:solid}
+.result-seed span{font-size:11px;color:var(--muted)}
+.round-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin:12px 0 0}
+.round-chips span{font-size:10px;padding:4px 9px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--green);white-space:nowrap}
+.round-chips span.skip{color:var(--muted);background:#f4f6ed;border-style:dashed}
+.result-summary{text-align:center;font-size:11px;color:var(--muted);margin:10px 0 0}
+.result-board + .result-score{margin-top:10px}
+@media(max-width:760px){.result-board{max-height:200px}.round-chips span{font-size:9px;padding:3px 7px}}
