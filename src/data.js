@@ -31,7 +31,7 @@ const rows = [
  ['Mondrianator',10,[[4,'green',3],[3,'blue',2]],[[1,'black',1]]],
  ['Multiplier',5,[[1,'pink',1]],[[5,'pink',2]]],
  ['Nautilus',6,[[1,'blue',1]],[[3,'pink',1]]],
- ['Packmaster',9,[[0,'yellow',3],[1,'blue',3]],[[3,'black',1]]],
+ ['Packmaster',9,[[0,'yellow',3],[1,'blue',2]],[[3,'black',1]]],
  ['Piper',4,[[0,'pink',3],[1,'blue',2]],[[3,'yellow',3]]],
  ['Pixellator',7,[[0,'blue',2],[1,'pink',2]],[[3,'green',2]]],
  ['Rainbowrisor',6,[[5,'pink',3],[4,'yellow',1]],[[1,['pink','yellow','green','blue'],1]]],
