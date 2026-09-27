@@ -23,6 +23,7 @@ test('played Boilnado network supplies Mondrianator 2 plus Cwalichecker 1, not 4
  const result=validate(s);assert.equal(result.valid,true,JSON.stringify(result.issues));
  const blue=result.networks.find(n=>n.color==='blue');assert.equal(blue.capacity,3);assert.equal(blue.demand,3);
  assert.equal(result.bonus,9);assert.equal(machine(26).ports.find(p=>p.color==='blue'||p.colors.includes('blue')).amount,2);
+ assert.deepEqual(result.fed.map(f=>[s.pieces.find(p=>p.id===f.id).machineId,f.amount,f.amount*3]),[[26,2,6],[7,1,3]],'each split destination earns its own bonus');
  s.pieces.find(p=>p.machineId===3).machineId=35;
  assert(validate(s).issues.some(i=>i.message.includes('Mondrianator ×2 + Cwalichecker ×1')));
 });

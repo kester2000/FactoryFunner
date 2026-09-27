@@ -100,7 +100,20 @@ function render(){
     const color=piece?result.portColors[`${piece.id}:${index}`]:null;
     return `<div class="rainbow-choice"><strong>${port.kind==='out'?'彩虹输出':'双色输入'} · ${port.amount} 单位 · 自动匹配</strong><p class="auto-color" data-auto-color="${color||''}">${color?`<i class="color-dot" style="--dot:${COLORS[color]}"></i>自动采用${COLOR_NAMES[color]}色 ×${port.amount}`:piece?'连接颜色不兼容':'连接后自动选择颜色'}</p><small>根据整条管路统一选择一种颜色，无需手动操作。</small></div>`;
   }
-  $('money').textContent=`$${game.money}`;$('cost').textContent=`−$${game.cost}`;$('bonus').textContent=`+$${result.bonus}`;
+  const baselineResult=game.over?result:validate({...game,pieces:game.baseline});
+  const bonusBefore=baselineResult.bonus,bonusDelta=result.bonus-bonusBefore;
+  const revenueNow=game.over?0:(placed()?current().revenue:0);
+  const moneyAfter=game.over?game.money:game.money+(revenueNow-game.cost);
+  $('money').textContent=`$${game.money}`;$('money-after').textContent=game.over?'':`结算后 → $${moneyAfter}`;
+  const roundTotal=revenueNow-game.cost+bonusDelta;
+  $('round-total').textContent=`${roundTotal>=0?'+':'−'}$${Math.abs(roundTotal)}`;
+  $('round-total-detail').textContent=game.over?'':(placed()?`${revenueNow} − ${game.cost} ${bonusDelta>=0?'+':'−'} ${Math.abs(bonusDelta)}`:'先安装机器');
+  $('round-total').classList.toggle('negative',roundTotal<0);
+  $('revenue-stat').textContent=`+$${revenueNow}`;
+  $('bonus-delta').textContent=game.over?'':(placed()?`连锁增量 ${bonusDelta>=0?'+':'−'}$${Math.abs(bonusDelta)}`:'先安装机器');
+  $('cost').textContent=`−$${game.cost}`;
+  $('net-change').textContent=game.over?'':`净变化 ${moneyAfter-game.money>=0?'+':'−'}$${Math.abs(moneyAfter-game.money)}`;
+  $('bonus').textContent=`+$${result.bonus}`;$('bonus-before').textContent=game.over?'':`行动前 +$${bonusBefore}`;
   $('round-label').textContent=`${String(game.round).padStart(2,'0')} / 08`;$('rounds').innerHTML=Array.from({length:8},(_,i)=>`<i class="${i<game.history.length?'done':i===game.round-1?'current':''}" title="第 ${i+1} 回合"></i>`).join('');
   $('board-title').textContent=game.over?'生产完成 · 查看你的工厂':'布局阶段 · 不用着急，慢慢规划';
   $('undo').disabled=!undo.length||game.over;$('redo').disabled=!redo.length||game.over;

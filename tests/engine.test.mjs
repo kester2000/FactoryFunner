@@ -161,6 +161,30 @@ test('machine chain calculates capacity and per-input-dot bonus',()=>{
  // Change input volume by switching to a machine with three blue input dots.
  // Direct graph flow is checked below using a controlled port fixture in a separate machine.
 });
+test('three-way output split rewards all three inputs and survives settlement and restore',()=>{
+ const s=newGame('three-way-bonus');s.deck=[3,40,28,17,1,2,4,5];
+ place(s,{kind:'pipe',shape:'four'},2,1);
+ place(s,{kind:'machine'},1,1,2);
+ s.round=2;const judger=place(s,{kind:'machine'},2,2,5);
+ s.round=3;const nautilus=place(s,{kind:'machine'},1,0);
+ s.round=4;const hexopacker=place(s,{kind:'machine'},3,1,2);
+ place(s,{kind:'supply',color:'green'},0,1);
+ place(s,{kind:'collector'},2,3,5);place(s,{kind:'collector'},0,0);
+ place(s,{kind:'supply',color:'pink'},3,2,4);place(s,{kind:'black'},3,0,2);
+ const result=validate(s);assert(result.valid,JSON.stringify(result.issues));
+ assert.deepEqual(result.fed,[
+  {id:judger.id,index:0,amount:1},
+  {id:nautilus.id,index:0,amount:1},
+  {id:hexopacker.id,index:1,amount:1},
+ ]);
+ assert.equal(result.bonus,9,'3 -> 1 + 1 + 1 earns 3 + 3 + 3');
+ // Complete the setup ledger so the final factory can be saved and restored.
+ s.history=s.deck.slice(0,3).map((machineId,i)=>({round:i+1,machineId,revenue:0,cost:0,skip:false,money:10}));
+ settle(s);while(!s.over)settle(s,true);
+ assert.equal(validate(s).bonus,9,'settlement preserves the split bonus');
+ assert.equal(validate(restore(JSON.parse(JSON.stringify(s)))).bonus,9);
+});
+
 test('self-return loops and source/machine merging are rejected',()=>{
  const s=newGame('feedback');s.deck[0]=27;place(s,{kind:'machine'},1,2,0);
  // Pink output loops to the pink input around the east side in three hexes.
