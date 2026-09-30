@@ -28,7 +28,7 @@ const rows = [
  ['Meltdown',7,[[5,'green',2],[0,'blue',1]],[[3,'yellow',2]]],
  ['Metamorphizor',10,[[5,'yellow',1],[0,'pink',1]],[[3,'yellow',1]]],
  ['Moisture-stir',6,[[5,'blue',3],[0,'green',2]],[[3,'green',2]]],
- ['Mondrianator',10,[[4,'green',3],[3,'blue',2]],[[1,'black',1]]],
+ ['Mondrianator',10,[[4,'green',2],[3,'blue',2]],[[1,'black',1]]],
  ['Multiplier',5,[[1,'pink',1]],[[5,'pink',2]]],
  ['Nautilus',6,[[1,'blue',1]],[[3,'pink',1]]],
  ['Packmaster',9,[[0,'yellow',3],[1,'blue',2]],[[3,'black',1]]],
