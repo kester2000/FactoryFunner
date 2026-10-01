@@ -86,9 +86,10 @@ export function createRoomService({now=Date.now,revealDelay=3000,selectionMs=300
     if(!seats(r).length)r.phase='finished';
   }
   function tick(){for(const [code,r] of rooms){if(now()-r.touched>86400000)rooms.delete(code);else tickRoom(r);}}
-  function addGuest(r) {
+  function addGuest(r,name) {
     if(members(r).length>=100)fail('观众席已满');
-    let name;do{name=`游客${randomInt(100000,1000000)}`;}while(members(r).some(p=>p.name===name));
+    name=typeof name==='string'?name.trim():'';
+    if(!name||name.length>20||members(r).some(p=>p.name===name)){do{name=`游客${randomInt(100000,1000000)}`;}while(members(r).some(p=>p.name===name));}
     const p={id:randomBytes(8).toString('hex'),token:randomBytes(24).toString('hex'),name,role:'spectator',left:false,seen:now(),acted:now(),game:null,selection:{},claimed:null,ready:false,passed:false,submitted:false,decisionUntil:null};
     r.players.push(p);return p;
   }
@@ -112,11 +113,11 @@ export function createRoomService({now=Date.now,revealDelay=3000,selectionMs=300
       const initial=newGame(randomBytes(6).toString('hex').toUpperCase(),false,{boardSkin:input.boardSkin||'Cian'});
       let code;do{code=randomBytes(3).toString('hex').toUpperCase();}while(rooms.has(code));
       const r={code,initial,boardSkin:initial.boardSkin,deck:shuffle(MACHINES.map(m=>m.id)),players:[],market:[],phase:'lobby',stage:'lobby',round:1,opensAt:null,selectionEndsAt:null,buildEndsAt:null,touched:now()};
-      const self=addGuest(r);r.hostId=self.id;rooms.set(code,r);return {...snapshot(r,self),token:self.token};
+      const self=addGuest(r,input.name);r.hostId=self.id;rooms.set(code,r);return {...snapshot(r,self),token:self.token};
     }
     const r=rooms.get(String(input.code||'').trim().toUpperCase());
     if(!r)fail('房间不存在或已过期；服务器重启后需重新创建',404);
-    if(input.action==='join'){const self=addGuest(r);r.touched=now();return {...snapshot(r,self),token:self.token};}
+    if(input.action==='join'){const self=addGuest(r,input.name);r.touched=now();return {...snapshot(r,self),token:self.token};}
     const self=members(r).find(p=>p.token===input.token);
     if(!self)fail('你已离开房间或连接凭据失效',401);
     self.seen=now();r.touched=now();
@@ -126,6 +127,13 @@ export function createRoomService({now=Date.now,revealDelay=3000,selectionMs=300
     if(playerActions.includes(input.action)&&(r.phase!=='playing'||input.round!==r.round))fail('回合已变化，请等待同步',409);
     switch(input.action) {
       case 'poll':break;
+      case 'rename': {
+        const name=typeof input.name==='string'?input.name.trim():'';
+        if(!name||name.length>20)fail('昵称需为1-20个字符');
+        if(self.role==='player'&&/^游客/.test(name))fail('选手名称不能以游客开头');
+        if(members(r).some(p=>p!==self&&p.name===name))fail('此昵称已被使用');
+        self.name=name;break;
+      }
       case 'sit': {
         if(r.phase!=='lobby')fail('比赛中只能观战，不能入座');
         if(self.role==='player')fail('你已经入座');

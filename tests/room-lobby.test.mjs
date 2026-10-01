@@ -34,7 +34,7 @@ test('public lobby, default guest spectators, mandatory named seats and read-onl
   const list=api({action:'list'}).rooms[0];assert.equal(list.players,2);assert.equal(list.spectators,0);
   assert.equal('token' in list,false);
   start();choose();
-  const c=api({action:'join',code:a.code,name:'ignored'});
+  const c=api({action:'join',code:a.code});
   assert.equal(c.role,'spectator');assert.match(c.name,/^游客\d+$/);
   for(const action of ['claim','draft','submit','timeout','ready'])assert.throws(()=>act(c,action,{round:1}),/观战者/);
   assert.throws(()=>act(c,'sit',{name:'丙'}),/比赛中/);
@@ -109,4 +109,22 @@ test('disconnected and explicitly departed players do not block rounds',()=>{
   assert.equal(act(b,'poll').game.history[0].autoReason,'offline');
   const s=setup();s.start();s.choose();s.act(s.a,'submit',{round:1,skip:true});s.act(s.b,'leave');
   assert.equal(s.act(s.a,'poll').round,2);
+});
+
+
+test('guest creation tolerates missing names and supports names before and after entry',()=>{
+  const api=createRoomService();
+  for(const name of [undefined,'','   ']){const guest=api({action:'create',name});assert.match(guest.name,/^游客\d+$/);assert.equal(guest.role,'spectator');}
+  const host=api({action:'create',name:'大厅昵称'});
+  assert.equal(host.name,'大厅昵称');assert.equal(host.role,'spectator');
+  const call=(action,name)=>api({action,code:host.code,token:host.token,name});
+  assert.equal(call('rename','房内昵称').name,'房内昵称');
+  assert.equal(api({action:'list'}).rooms.find(r=>r.code===host.code).host,'房内昵称');
+  assert.equal(call('poll').role,'spectator');
+  for(const name of ['', ' ', 'x'.repeat(21)])assert.throws(()=>call('rename',name),/1-20/);
+  const join=api({action:'join',code:host.code,name:'加入昵称'});assert.equal(join.name,'加入昵称');assert.equal(join.role,'spectator');
+  assert.throws(()=>call('rename','加入昵称'),/使用/);
+  const duplicate=api({action:'join',code:host.code,name:'房内昵称'});assert.match(duplicate.name,/^游客\d+$/);
+  call('sit','入座昵称');assert.equal(call('rename','选手新昵称').role,'player');
+  assert.throws(()=>call('rename','游客123'),/游客/);
 });
