@@ -2,9 +2,10 @@ import {MACHINES,PIPES,COLORS,COLOR_NAMES} from './data.js';
 import {BOARD_SKINS,playableBoard,boardImage,boardGridCells} from './boards.js';
 import {tracePipeStroke,planPipePath,layPipePath} from './routing.js';
 import {LESSONS} from './tutorial.js';
+import {setupMultiplayer} from './multiplayer.js';
 import {newGame,clone,place,remove,move,rotate,settle,resetRound,validate,restore,machine,ports,pipeEdges,center,neighbor,label,placementError,mod} from './engine.js';
 const $=id=>document.getElementById(id),SAVE='factory-funner.save.v1',BEST='factory-funner.best.v1';
-let game,saveError=false,loaded=false;
+let game,saveError=false,loaded=false,multiplayer=null;
 try{const raw=localStorage.getItem(SAVE);if(raw){game=restore(JSON.parse(raw));loaded=true;}}catch{saveError=true;}
 game ||=newGame(Math.random().toString(36).slice(2,9).toUpperCase());
 let tool={kind:'machine'},rotation=0,flipped=false,selected=null,undo=[],redo=[],diagnose=false,result=validate(game),hover=null;
@@ -17,8 +18,8 @@ const current=()=>machine(game.deck[game.round-1]);
 const placed=()=>game.pieces.some(p=>p.kind==='machine'&&p.round===game.round);
 const selectedPiece=()=>game.pieces.find(p=>p.id===selected);
 function toast(message){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3400);}
-function save(){try{localStorage.setItem(SAVE,JSON.stringify(game));$('save-status').textContent='已自动保存';}catch{$('save-status').textContent='保存失败 · 请导出';saveError=true;}}
-function change(action){const before=clone(game);try{action();undo.push(before);if(undo.length>100)undo.shift();redo=[];save();render();}catch(error){game=before;toast(error.message);}}
+function save(){if(multiplayer?.active()){multiplayer.saveDraft();$('save-status').textContent='联机草稿已保存';return;}try{localStorage.setItem(SAVE,JSON.stringify(game));$('save-status').textContent='已自动保存';}catch{$('save-status').textContent='保存失败 · 请导出';saveError=true;}}
+function change(action){if(multiplayer?.locked())return;const before=clone(game);try{action();undo.push(before);if(undo.length>100)undo.shift();redo=[];save();render();}catch(error){game=before;toast(error.message);}}
 function point(e,length=67.5){const angle=e*Math.PI/3;return [Math.cos(angle)*length,Math.sin(angle)*length];}
 function polygon(radius=77){return Array.from({length:6},(_,i)=>{const a=(i*60+30)*Math.PI/180;return `${Math.cos(a)*radius},${Math.sin(a)*radius}`;}).join(' ');}
 function pipeDrawing(edges,color='#bdcfc0',small=false,bridge=false,highlight=false){
@@ -104,11 +105,13 @@ function render(){
   const baselineResult=game.over?result:validate({...game,pieces:game.baseline});
   const bonusBefore=baselineResult.bonus,bonusDelta=result.bonus-bonusBefore;
   const revenueNow=game.over?0:(placed()?current().revenue:0);
-  const moneyAfter=game.over?game.money:game.money+(revenueNow-game.cost);
+  const selectionDelta=!game.over&&placed()?(multiplayer?.adjustment()||0):0;
+  const moneyAfter=game.over?game.money:game.money+(revenueNow-game.cost)+selectionDelta;
   $('money').textContent=`$${game.money}`;$('money-after').textContent=game.over?'':`结算后 → $${moneyAfter}`;
-  const roundTotal=revenueNow-game.cost+bonusDelta;
+  const roundTotal=revenueNow-game.cost+bonusDelta+selectionDelta;
   $('round-total').textContent=`${roundTotal>=0?'+':'−'}$${Math.abs(roundTotal)}`;
   $('round-total-detail').textContent=game.over?'':(placed()?`${revenueNow} − ${game.cost} ${bonusDelta>=0?'+':'−'} ${Math.abs(bonusDelta)}`:'先安装机器');
+  if(selectionDelta)$('round-total-detail').textContent+=` · 抢选 ${selectionDelta>0?'+':''}${selectionDelta}`;
   $('round-total').classList.toggle('negative',roundTotal<0);
   $('revenue-stat').textContent=`+$${revenueNow}`;
   $('bonus-delta').textContent=game.over?'':(placed()?`连锁增量 ${bonusDelta>=0?'+':'−'}$${Math.abs(bonusDelta)}`:'先安装机器');
@@ -124,13 +127,15 @@ function render(){
   $('active-tool').textContent=active;
   $('seed-badge').textContent=`种子 ${game.seed}`;
   $('seed-badge').title=`点击复制种子「${game.seed}」；新对局时填入相同种子并选择${game.boardId==='A'?(BOARD_SKINS.find(s=>s.id===game.boardSkin)||{name:'同一'}).name+' A 面':'同一棋盘'}，可得到相同的 8 台机器顺序`;
+  $('seed-badge').disabled=!!multiplayer?.active();
+  if(multiplayer?.active()){$('seed-badge').textContent='原版 · 实时抢选';$('seed-badge').title='本局机器由每轮抢选决定';}
   $('remove').disabled=!p||game.over||(p.kind==='machine'&&p.round<game.round);
   $('rotate').disabled=game.over||(!tool&&!p)||(p?.kind==='machine'&&p.round<game.round);
   $('flip').disabled=game.over||(p?.kind??tool?.kind)!=='pipe';
   const status=game.over?'ok':!game.pieces.length?'idle':result.valid&&placed()?'ok':'bad';
   $('status-icon').className=`status-icon ${status}`;$('status-icon').textContent=status==='ok'?'✓':status==='bad'?'!':'○';
   $('status-title').textContent=game.over?'八轮生产完成':status==='ok'?'所有连接已就绪':!game.pieces.length?'让工厂开始运转':`${result.issues.length} 项连接待检查`;
-  $('status-detail').textContent=game.over?`最终成绩 $${game.money+result.bonus}`:status==='ok'?`本轮净收入 $${m.revenue-game.cost}，可以完成安装。`:!placed()?'选择本轮机器，点击棋盘空格安装。':result.issues[0]?.message||'继续搭建你的工厂。';
+  $('status-detail').textContent=game.over?`最终成绩 $${game.money+result.bonus}`:status==='ok'?`本轮净收入 $${m.revenue-game.cost+selectionDelta}，可以完成安装。`:!placed()?'选择本轮机器，点击棋盘空格安装。':result.issues[0]?.message||'继续搭建你的工厂。';
   renderPalette();renderLayers();drawBoard();
 }
 function renderLayers(){
@@ -187,8 +192,8 @@ async function copyText(text){
 }
 $('seed-badge').onclick=async()=>{await copyText(game.seed);toast(`种子 ${game.seed} 已复制，新对局填入即可得到相同机器顺序`);};
 $('route-tool').onclick=()=>{routeMode=!routeMode;tool=null;hover=null;selected=null;render();toast(routeMode?'划线铺管：拖过需要连接的格子，松开铺设；Esc 取消':'已退出划线铺管');};
-$('undo').onclick=()=>{if(!undo.length||game.over)return;redo.push(clone(game));game=undo.pop();selected=null;hover=null;save();render();};
-$('redo').onclick=()=>{if(!redo.length||game.over)return;undo.push(clone(game));game=redo.pop();selected=null;hover=null;save();render();};
+$('undo').onclick=()=>{if(multiplayer?.locked()||!undo.length||game.over)return;redo.push(clone(game));game=undo.pop();selected=null;hover=null;save();render();};
+$('redo').onclick=()=>{if(multiplayer?.locked()||!redo.length||game.over)return;undo.push(clone(game));game=redo.pop();selected=null;hover=null;save();render();};
 $('reset-round').onclick=()=>{
   if(game.over)return;
   change(()=>{resetRound(game);selected=null;hover=null;focusedCell=null;tool={kind:'machine'};rotation=0;flipped=false;diagnose=false;});
@@ -377,6 +382,7 @@ $('modal').addEventListener('click',e=>{if(e.target===$('modal')){const r=$('mod
 function start(seed,options={}){endWarehouseDrag();pipeStroke=null;routeMode=false;gesture=null;dragPreview=null;pointers.clear();game=options.next||newGame(seed||Math.random().toString(36).slice(2,9).toUpperCase(),false,{boardSkin:game.boardSkin,...options});tool={kind:'machine'};selected=null;rotation=0;flipped=false;undo=[];redo=[];diagnose=false;hover=null;focusedCell=null;save();resetCamera();render();$('modal').close();toast(`工厂 ${game.boardId} 已就绪，开始规划吧。`);}
 function boardPreview(skin){return `<svg class="board-preview" viewBox="0 0 965 880" role="img" aria-label="${skin} A 面布局">${boardBackground('A',skin)}</svg>`;}
 function showBoards(skin=game.boardSkin||'Cian'){
+  if(multiplayer?.active()){toast('多人对局使用房主选择的相同棋盘');return;}
   const chosen=BOARD_SKINS.find(s=>s.id===skin);
   modal('选择 A 面','六种原版 A 面各有 41 个可用格，边缘墙壁的位置不同。',`<div class="skin-options">${BOARD_SKINS.map(s=>`<button data-skin="${s.id}" aria-pressed="${s.id===skin}"><img src="${s.image}" alt="${s.name} A 面">${s.name} A 面</button>`).join('')}</div><div id="board-preview">${boardPreview(skin)}</div><p>${chosen.name} A 面 · 41 个可用格</p><button id="start-chosen-board" class="primary">用此板面重新开局</button><p class="muted">切换板面必须重新开局。确认后清空当前布局，资金恢复为 $10，从第 1 回合开始；仅预览或取消不会改变当前对局。</p>`);
   document.querySelectorAll('[data-skin]').forEach(b=>b.onclick=()=>showBoards(b.dataset.skin));
@@ -384,26 +390,28 @@ function showBoards(skin=game.boardSkin||'Cian'){
 }
 $('boards').onclick=()=>showBoards();
 function confirmNew(skin=game.boardSkin||'Cian'){
+  if(multiplayer?.active()){toast('请先退出多人房间，再开始单人对局');return;}
   modal('开始新工厂','确认开始后将替换当前对局；可先从工厂菜单导出存档。',`<p>选择 A 面，每局随机抽取 8 台机器。</p><label for="new-board">A 面布局</label><select id="new-board" class="seed-field">${BOARD_SKINS.map(s=>`<option value="${s.id}" ${s.id===skin?'selected':''}>${s.name} A 面 · 41 格</option>`).join('')}</select><div id="new-board-preview">${boardPreview(skin)}</div><label for="seed">对局种子</label><input class="seed-field" id="seed" maxlength="50" placeholder="留空随机；相同种子使用相同机器" value=""><div class="modal-actions"><button id="cancel-new">保留当前对局</button><button class="primary" id="confirm-new">开始新对局 →</button></div>`);
   $('new-board').onchange=()=>{$('new-board-preview').innerHTML=boardPreview($('new-board').value);};
   $('cancel-new').onclick=()=>$('modal').close();
   $('confirm-new').onclick=()=>{start($('seed').value.trim(),{boardId:'A',boardSkin:$('new-board').value,series:'original'});};
 }
-$('menu').onclick=()=>{modal('工厂菜单','你的进度自动保存在当前浏览器。',`<div class="menu-grid"><button id="board-menu">选择 A 面 <small>预览和切换六种原版布局</small></button><button id="new-game" class="primary">新工厂 <small>随机 8 台机器，全新规划</small></button><button id="welcome-replay">欢迎界面 <small>重看首次开张的欢迎弹窗</small></button><button id="export">导出存档 <small>保存文件，跨设备继续</small></button><button id="import">导入存档 <small>读取之前导出的 JSON</small></button><button id="ledger">本局账本 <small>查看每轮收入和支出</small></button><button id="catalog">机器图鉴 <small>查看完整 48 张机器</small></button></div><p class="muted">对局种子：<b>${escape(game.seed)}</b><br>规则：单人模式 · 工厂 ${game.boardId||'A'} · 无时间限制</p>`);
+$('menu').onclick=()=>{modal('工厂菜单','你的进度自动保存在当前浏览器。',`<div class="menu-grid"><button id="board-menu">选择 A 面 <small>预览和切换六种原版布局</small></button><button id="new-game" class="primary">新工厂 <small>随机 8 台机器，全新规划</small></button><button id="welcome-replay">欢迎界面 <small>重看首次开张的欢迎弹窗</small></button><button id="export">导出存档 <small>保存文件，跨设备继续</small></button><button id="import">导入存档 <small>读取之前导出的 JSON</small></button><button id="ledger">本局账本 <small>查看每轮收入和支出</small></button><button id="catalog">机器图鉴 <small>查看完整 48 张机器</small></button></div><p class="muted">对局种子：<b>${escape(game.seed)}</b><br>规则：${multiplayer?.active()?'多人原版抢选':'单人模式'} · 工厂 ${game.boardId||'A'} · 无时间限制</p>`);
   $('board-menu').onclick=()=>showBoards();$('new-game').onclick=()=>confirmNew();$('welcome-replay').onclick=()=>showWelcome(true);$('export').onclick=exportSave;$('import').onclick=()=>$('import-file').click();$('ledger').onclick=showLedger;$('catalog').onclick=showCatalog;
 };
 function exportSave(){const blob=new Blob([JSON.stringify(game,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`factory-funner-round-${game.round}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('存档已导出');}
-$('import-file').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>500000)throw Error('存档文件过大');const imported=restore(JSON.parse(await file.text()));modal('导入这份存档？',`第 ${imported.round} 回合 · 资金 $${imported.money}`,`<p>导入会替换当前浏览器中的对局。</p><div class="modal-actions"><button id="import-cancel">取消</button><button id="import-confirm" class="primary">导入并继续 →</button></div>`);$('import-cancel').onclick=()=>$('modal').close();$('import-confirm').onclick=()=>{game=imported;undo=[];redo=[];selected=null;tool=null;save();render();resetCamera();$('modal').close();toast('存档已恢复');};}catch(error){toast('无法导入：'+error.message);}};
+$('import-file').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;if(multiplayer?.active()){toast('多人对局中不能导入单人存档');return;}try{if(file.size>500000)throw Error('存档文件过大');const imported=restore(JSON.parse(await file.text()));modal('导入这份存档？',`第 ${imported.round} 回合 · 资金 $${imported.money}`,`<p>导入会替换当前浏览器中的对局。</p><div class="modal-actions"><button id="import-cancel">取消</button><button id="import-confirm" class="primary">导入并继续 →</button></div>`);$('import-cancel').onclick=()=>$('modal').close();$('import-confirm').onclick=()=>{game=imported;undo=[];redo=[];selected=null;tool=null;save();render();resetCamera();$('modal').close();toast('存档已恢复');};}catch(error){toast('无法导入：'+error.message);}};
 const signedMoney=value=>`${value<0?'−':'+'}$${Math.abs(value)}`;
 const roundBonus=h=>h.bonusDelta===undefined?(h.skip?'+$0':'未记录'):signedMoney(h.bonusDelta);
-function ledgerHTML(){return `<table class="ledger"><thead><tr><th>回合</th><th>机器</th><th>收入</th><th>支出</th><th>连锁增量</th><th>资金</th></tr></thead><tbody>${game.history.map(h=>`<tr><td>${h.round}</td><td>${machine(h.machineId).name}${h.skip?' · 跳过':''}</td><td>+$${h.revenue}</td><td>−$${h.cost}</td><td>${roundBonus(h)}</td><td>$${h.money}</td></tr>`).join('')}</tbody></table>`;}
+function ledgerHTML(){return `<table class="ledger"><thead><tr><th>回合</th><th>机器</th><th>收入</th><th>支出</th><th>连锁增量</th><th>抢选调整</th><th>资金</th></tr></thead><tbody>${game.history.map(h=>`<tr><td>${h.round}</td><td>${machine(h.machineId).name}${h.skip?' · 跳过':''}</td><td>+$${h.revenue}</td><td>−$${h.cost}</td><td>${roundBonus(h)}</td><td>${h.selection?`${signedMoney(h.total)}（罚 ${h.penalty} / 首 ${h.firstFee} / 末 +${h.lastBonus}）`:'—'}</td><td>$${h.money}</td></tr>`).join('')}</tbody></table>`;}
 function showLedger(){modal('生产账本','每一份收益，都来自你的规划。',game.history.length?ledgerHTML():'<p>完成第一轮安装后，这里会记录你的收支。</p>');}
 function showCatalog(){modal('机器图鉴','端口白点表示需求量；数字表示产出量。',`<div class="catalog-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">${MACHINES.map(m=>`<button data-machine-info="${m.id}" style="padding:8px;font-size:10px"><img src="${m.image}" style="width:100%;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)" alt="${m.name}" loading="lazy">${m.id}. ${m.name}<br><b>$${m.revenue}</b></button>`).join('')}</div>`);document.querySelectorAll('[data-machine-info]').forEach(b=>b.onclick=()=>{const m=machine(+b.dataset.machineInfo);modal(m.name,`机器 ${m.id} / 48 · 收入 $${m.revenue}`,`<img src="${m.image}" alt="${m.name}" style="width:240px;max-width:100%;display:block;margin:auto;image-rendering:auto"><p>${m.ports.map(p=>`${p.kind==='in'?'输入':'输出'}：${p.colors.map(c=>COLOR_NAMES[c]).join('或')} ×${p.amount}`).join('<br>')}</p><button id="catalog-back" class="outline">← 返回图鉴</button>`);$('catalog-back').onclick=showCatalog;});}
 $('diagnostics').onclick=()=>{diagnose=true;drawBoard();modal('连接诊断',result.valid?'当前所有管路均通过检查。':'点击问题，定位到相关组件。',result.issues.length?`<ul class="issue-list">${result.issues.map((issue,i)=>`<li><button data-issue="${i}">${i+1}. ${escape(issue.message)} <span style="float:right">↗</span></button></li>`).join('')}</ul>`:'<p>颜色匹配、输入流量、端口连接和回收路径均正常。安装本轮机器后即可结算。</p>');document.querySelectorAll('[data-issue]').forEach(b=>b.onclick=()=>{selected=result.issues[+b.dataset.issue].ids[0];tool=null;resetCamera();$('modal').close();render();});};
-function finishRound(skip=false){try{settle(game,skip);undo=[];redo=[];selected=null;tool=game.over?null:{kind:'machine'};rotation=0;flipped=false;diagnose=false;save();render();if(game.over)showResults();else toast(skip?'已跳过本轮，棋盘恢复到上轮结算状态。':`安装完成，进入第 ${game.round} 回合。`);}catch(error){toast(error.message);}}
+function finishRound(skip=false){if(multiplayer?.active()){multiplayer.submit(skip);return;}try{settle(game,skip);undo=[];redo=[];selected=null;tool=game.over?null:{kind:'machine'};rotation=0;flipped=false;diagnose=false;save();render();if(game.over)showResults();else toast(skip?'已跳过本轮，棋盘恢复到上轮结算状态。':`安装完成，进入第 ${game.round} 回合。`);}catch(error){toast(error.message);}}
 $('settle').onclick=()=>game.over?showResults():finishRound();
-$('skip').onclick=()=>{modal('跳过本回合？','单人模式跳过机器没有罚款。','<p>本回合的所有改动将撤销，工厂恢复至上回合结算后的布局，然后翻开下一台机器。</p><div class="modal-actions"><button id="cancel-skip">继续规划</button><button id="confirm-skip" class="primary">跳过本轮 →</button></div>');$('cancel-skip').onclick=()=>$('modal').close();$('confirm-skip').onclick=()=>{$('modal').close();finishRound(true);};};
+$('skip').onclick=()=>{modal('跳过本回合？',multiplayer?.active()?multiplayer.discardDescription():'单人模式跳过机器没有罚款。','<p>本回合的所有改动将撤销，工厂恢复至上回合结算后的布局，本轮提交后不能撤回。</p><div class="modal-actions"><button id="cancel-skip">继续规划</button><button id="confirm-skip" class="primary">跳过本轮 →</button></div>');$('cancel-skip').onclick=()=>$('modal').close();$('confirm-skip').onclick=()=>{$('modal').close();finishRound(true);};};
 function showResults(){
+  if(multiplayer?.active()){multiplayer.open();return;}
   const bonus=validate(game).bonus,total=game.money+bonus;let best=total;
   try{best=Math.max(total,Number(localStorage.getItem(BEST))||0);localStorage.setItem(BEST,String(best));}catch{}
   const boardArt=`<svg class="result-board" viewBox="0 0 965 880" role="img" aria-label="最终工厂布局">${boardBackground(game.boardId)}${game.pieces.map(pieceMarkup).join('')}</svg>`;
@@ -425,3 +433,17 @@ function showWelcome(){
 if(!loaded)showWelcome();
 if(saveError)toast('浏览器存档不可用或原存档损坏，请使用菜单导出保存。');
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+const soloBeforeMultiplayer=clone(game);
+multiplayer=setupMultiplayer({modal,toast,getGame:()=>game,restore,refresh:()=>render(),
+  applyGame:state=>{
+    endWarehouseDrag();pipeStroke=null;routeMode=false;gesture=null;dragPreview=null;pointers.clear();
+    game=clone(state);undo=[];redo=[];selected=null;tool=game.over?null:{kind:'machine'};
+    rotation=0;flipped=false;diagnose=false;hover=null;focusedCell=null;
+    $('modal').close();save();resetCamera();render();
+  },
+  restoreSolo:()=>{
+    try{game=restore(JSON.parse(localStorage.getItem(SAVE)));}catch{game=clone(soloBeforeMultiplayer);}
+    undo=[];redo=[];selected=null;tool={kind:'machine'};hover=null;save();resetCamera();render();
+  },
+});

@@ -2,12 +2,15 @@ import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { multiplayerHandler } from './multiplayer.mjs';
 const root = fileURLToPath(new URL('.', import.meta.url));
 const types = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'};
 const port = Number(process.env.PORT || 4173);
+const handleMultiplayer = multiplayerHandler();
 http.createServer(async (req,res)=>{
   try {
     const url = new URL(req.url,'http://localhost');
+    if(url.pathname === '/api/multiplayer') {await handleMultiplayer(req,res); return;}
     const path = decodeURIComponent(url.pathname);
     if (path.includes('..') || !(/^\/(?:$|index.html$|src\/|assets\/game\/|assets\/cover.png$|sw.js$|manifest.webmanifest$|icon.svg$)/.test(path))) { res.writeHead(404).end(); return; }
     const file = resolve(root, '.' + (path==='/'?'/index.html':path));
