@@ -8,7 +8,8 @@ import {machine, neighbor, validate} from '../src/engine.js';
 import {playableBoard} from '../src/boards.js';
 
 function fixture(options) {
-  const request = createRoomService({revealDelay:0,...options});
+  const raw = createRoomService({revealDelay:0,...options});
+  const request = input => {const result=raw(input);if(['create','join'].includes(input.action)&&input.name){const seated=raw({action:'sit',code:result.code,token:result.token,name:input.name});return {...seated,token:result.token};}return result;};
   const a = request({action:'create', name:'甲', boardSkin:'Green'});
   const b = request({action:'join', name:'乙', code:a.code});
   const call = (who, action, extra={}) => request({code:a.code, token:who.token, action, ...extra});
@@ -26,7 +27,7 @@ test('rooms share board and a machine market, require host and two players, and 
   assert.notEqual(started.game.boardSkin,peer.game.boardSkin);
   assert.equal(started.game.boardSkin, 'Green');
   assert.equal(peer.players.some(p=>'token' in p), false);
-  assert.throws(()=>request({action:'join',code:a.code,name:'丙'}), /开始/);
+  assert.throws(()=>request({action:'join',code:a.code,name:'丙'}), /观战/);
   const solo = request({action:'create',name:'独自'});
   assert.throws(()=>request({...solo,action:'start'}), /至少/);
 });
@@ -185,6 +186,7 @@ test('simultaneous HTTP claims have exactly one winner', async t => {
   const a=(await post({action:'create',name:'甲'})).data;
   const b=(await post({action:'join',code:a.code,name:'乙'})).data;
   const act=(p,action,extra={})=>post({code:a.code,token:p.token,action,...extra});
+  await act(a,'sit',{name:'甲'});await act(b,'sit',{name:'乙'});
   await act(a,'start');await act(a,'ready',{round:1});
   const ready=(await act(b,'ready',{round:1})).data;
   const machineId=ready.market[0].machineId;
@@ -214,7 +216,7 @@ test('capacity, host transfer, offline removal, forfeits and expiration', () => 
   assert.equal(call(b,'poll').hostId,b.selfId);
   call(b,'start');
   const target=call(b,'poll').players.find(p=>p.id!==b.selfId);
-  assert.throws(()=>call(b,'remove',{playerId:target.id}), /30 秒/);
+  assert.throws(()=>call(b,'remove',{playerId:target.id}), /离线/);
   time=31000;
   assert.equal(call(b,'remove',{playerId:target.id}).players.find(p=>p.id===target.id).left,true);
   time+=86400001;

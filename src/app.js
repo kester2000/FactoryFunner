@@ -18,7 +18,7 @@ const current=()=>machine(game.deck[game.round-1]);
 const placed=()=>game.pieces.some(p=>p.kind==='machine'&&p.round===game.round);
 const selectedPiece=()=>game.pieces.find(p=>p.id===selected);
 function toast(message){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3400);}
-function save(){if(multiplayer?.active()){multiplayer.saveDraft();$('save-status').textContent='联机草稿已保存';return;}try{localStorage.setItem(SAVE,JSON.stringify(game));$('save-status').textContent='已自动保存';}catch{$('save-status').textContent='保存失败 · 请导出';saveError=true;}}
+function save(){if(multiplayer?.active()){multiplayer.saveDraft();return;}try{localStorage.setItem(SAVE,JSON.stringify(game));$('save-status').textContent='已自动保存';}catch{$('save-status').textContent='保存失败 · 请导出';saveError=true;}}
 function change(action){if(multiplayer?.locked())return;const before=clone(game);try{action();undo.push(before);if(undo.length>100)undo.shift();redo=[];save();render();}catch(error){game=before;toast(error.message);}}
 function point(e,length=67.5){const angle=e*Math.PI/3;return [Math.cos(angle)*length,Math.sin(angle)*length];}
 function polygon(radius=77){return Array.from({length:6},(_,i)=>{const a=(i*60+30)*Math.PI/180;return `${Math.cos(a)*radius},${Math.sin(a)*radius}`;}).join(' ');}
@@ -430,17 +430,17 @@ function showWelcome(){
   $('welcome-tutorial').onclick=()=>showTutorial(0);
   $('welcome-random').onclick=()=>$('modal').close();
 }
-if(!loaded)showWelcome();
+// Room lobby is the default entry.
 if(saveError)toast('浏览器存档不可用或原存档损坏，请使用菜单导出保存。');
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
 
 const soloBeforeMultiplayer=clone(game);
 multiplayer=setupMultiplayer({modal,toast,getGame:()=>game,restore,refresh:()=>render(),
-  applyGame:state=>{
+  applyGame:(state,{keepDialog=false}={})=>{
     endWarehouseDrag();pipeStroke=null;routeMode=false;gesture=null;dragPreview=null;pointers.clear();
     game=clone(state);undo=[];redo=[];selected=null;tool=game.over?null:{kind:'machine'};
     rotation=0;flipped=false;diagnose=false;hover=null;focusedCell=null;
-    $('modal').close();save();resetCamera();render();
+    if(!keepDialog)$('modal').close();save();resetCamera();render();
   },
   restoreSolo:()=>{
     try{game=restore(JSON.parse(localStorage.getItem(SAVE)));}catch{game=clone(soloBeforeMultiplayer);}
